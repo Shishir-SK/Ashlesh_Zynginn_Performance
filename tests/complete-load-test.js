@@ -142,6 +142,28 @@ function executePublicFlow() {
     responseTime.add(response.timings.duration);
     requestCount.add(1);
     
+    // Get rooms by category (NEW)
+    url = urlHelper.replaceParams('/hotels/branch/{branchId}/rooms-by-category');
+    response = httpHelper.get(url, { tags: { name: 'GetRoomsByCategory', flow: 'public' } });
+    const roomsByCategorySuccess = check(response, {
+      'rooms by category retrieved': (r) => validator.publicEndpoint(r),
+      'response time < 800ms': (r) => r.timings.duration < 800,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
+    // Get max occupancy (NEW)
+    url = urlHelper.replaceParams('/hotels/max-occupancy/{branchId}');
+    response = httpHelper.get(url, { tags: { name: 'GetMaxOccupancy', flow: 'public' } });
+    const maxOccupancySuccess = check(response, {
+      'max occupancy retrieved': (r) => validator.publicEndpoint(r),
+      'response time < 1000ms': (r) => r.timings.duration < 1000,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
     // Get add-ons for branch
     url = urlHelper.replaceParams('/addons/branch/{branchId}');
     response = httpHelper.get(url, { tags: { name: 'GetAddons', flow: 'public' } });
@@ -226,6 +248,17 @@ function executePublicFlow() {
     errorRate.add(response.status >= 400);
     responseTime.add(response.timings.duration);
     requestCount.add(1);
+    
+    // Get organization config (NEW)
+    url = urlHelper.replaceParams('/organization-settings/config/{orgId}');
+    response = httpHelper.get(url, { tags: { name: 'GetOrgConfig', flow: 'public' } });
+    const orgConfigSuccess = check(response, {
+      'org config retrieved': (r) => validator.publicEndpoint(r),
+      'response time < 800ms': (r) => r.timings.duration < 800,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
   });
 }
 
@@ -261,6 +294,32 @@ function executeUserFlow() {
     errorRate.add(response.status >= 400);
     responseTime.add(response.timings.duration);
     requestCount.add(1);
+    
+    // Update user profile (NEW)
+    if (random.intBetween(1, 10) <= 3) { // 30% chance
+      const updateData = dataGenerator.userUpdateRequest();
+      response = httpHelper.put('/users/me', updateData, 'user', { tags: { name: 'UpdateUserProfile', flow: 'user' } });
+      const updateSuccess = check(response, {
+        'user profile updated': (r) => validator.success(r),
+        'response time < 1200ms': (r) => r.timings.duration < 1200,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Upload profile image (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const imageData = dataGenerator.imageUploadRequest();
+      response = httpHelper.post('/users/me/image', imageData, 'user', { tags: { name: 'UploadProfileImage', flow: 'user' } });
+      const imageSuccess = check(response, {
+        'profile image uploaded': (r) => validator.success(r),
+        'response time < 2000ms': (r) => r.timings.duration < 2000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
   });
   
   group('Cart Flow', function () {
@@ -300,10 +359,24 @@ function executeUserFlow() {
       requestCount.add(1);
     }
     
+    // Decrement cart item (NEW)
+    if (random.intBetween(1, 10) <= 3) { // 30% chance
+      const cartItemId = random.id(config.TEST_DATA.cartItemIds);
+      url = urlHelper.replaceParams('/cart/items/{cartItemId}/decrement', { cartItemId });
+      response = httpHelper.delete(url, 'user', { tags: { name: 'DecrementCartItem', flow: 'user' } });
+      const decrementSuccess = check(response, {
+        'cart item decremented': (r) => validator.success(r),
+        'response time < 800ms': (r) => r.timings.duration < 800,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
     // Remove cart item (occasionally)
     if (random.intBetween(1, 10) <= 3) { // 30% chance
       const cartItemId = random.id(config.TEST_DATA.cartItemIds);
-      let url = urlHelper.replaceParams('/cart/items/{cartItemId}', { cartItemId });
+      url = urlHelper.replaceParams('/cart/items/{cartItemId}', { cartItemId });
       response = httpHelper.delete(url, 'user', { tags: { name: 'RemoveCartItem', flow: 'user' } });
       const removeCartSuccess = check(response, {
         'cart item removed': (r) => validator.noContent(r),
@@ -349,6 +422,39 @@ function executeUserFlow() {
     responseTime.add(response.timings.duration);
     requestCount.add(1);
     
+    // Get booking credits (NEW)
+    url = urlHelper.replaceParams('/bookings/{bookingId}/credits', { bookingId });
+    response = httpHelper.get(url, 'user', { tags: { name: 'GetBookingCredits', flow: 'booking' } });
+    const creditsSuccess = check(response, {
+      'booking credits retrieved': (r) => validator.success(r),
+      'response time < 1000ms': (r) => r.timings.duration < 1000,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
+    // Get booking activity (NEW)
+    url = urlHelper.replaceParams('/bookings/{bookingId}/activity', { bookingId });
+    response = httpHelper.get(url, 'user', { tags: { name: 'GetBookingActivity', flow: 'booking' } });
+    const activitySuccess = check(response, {
+      'booking activity retrieved': (r) => validator.success(r),
+      'response time < 1200ms': (r) => r.timings.duration < 1200,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
+    // Get financial history (NEW)
+    url = urlHelper.replaceParams('/bookings/{bookingId}/financial-history', { bookingId });
+    response = httpHelper.get(url, 'user', { tags: { name: 'GetFinancialHistory', flow: 'booking' } });
+    const financialSuccess = check(response, {
+      'financial history retrieved': (r) => validator.success(r),
+      'response time < 1200ms': (r) => r.timings.duration < 1200,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
     // Cancel booking (occasionally)
     if (random.intBetween(1, 10) <= 2) { // 20% chance
       const cancelData = dataGenerator.bookingCancelRequest();
@@ -385,6 +491,51 @@ function executeUserFlow() {
     responseTime.add(response.timings.duration);
     requestCount.add(1);
   });
+  
+  group('Add-on Flow', function () {
+    // Get add-on by ID (NEW)
+    const addOnId = random.id(config.TEST_DATA.addOnIds);
+    let url = urlHelper.replaceParams('/addons/{addOnId}', { addOnId });
+    let response = httpHelper.get(url, 'user', { tags: { name: 'GetAddOnById', flow: 'user' } });
+    const addOnSuccess = check(response, {
+      'add-on retrieved': (r) => validator.success(r),
+      'response time < 800ms': (r) => r.timings.duration < 800,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+  });
+  
+  group('Review Flow', function () {
+    // Load review form (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const bookingId = random.id(config.TEST_DATA.bookingIds);
+      let url = `/reviews/form?bookingId=${bookingId}&token=sample_token`;
+      response = httpHelper.get(url, { tags: { name: 'LoadReviewForm', flow: 'user' } });
+      const formSuccess = check(response, {
+        'review form loaded': (r) => validator.success(r),
+        'response time < 1000ms': (r) => r.timings.duration < 1000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Submit review (NEW)
+    if (random.intBetween(1, 10) <= 1) { // 10% chance
+      const reviewData = dataGenerator.reviewSubmitRequest();
+      const bookingId = random.id(config.TEST_DATA.bookingIds);
+      let url = `/reviews/submit?bookingId=${bookingId}&token=sample_token`;
+      response = httpHelper.post(url, reviewData, 'user', { tags: { name: 'SubmitReview', flow: 'user' } });
+      const submitSuccess = check(response, {
+        'review submitted': (r) => validator.success(r),
+        'response time < 2000ms': (r) => r.timings.duration < 2000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+  });
 }
 
 // C. Admin / Staff Flow (High Load Critical APIs)
@@ -414,6 +565,28 @@ function executeAdminFlow() {
     errorRate.add(response.status >= 400);
     responseTime.add(response.timings.duration);
     requestCount.add(1);
+    
+    // Get revenue reports (NEW)
+    response = httpHelper.get('/admin/reports/room-booking-revenue?page=0&size=20', 'admin', { tags: { name: 'GetRevenueReport', flow: 'admin' } });
+    const revenueSuccess = check(response, {
+      'revenue report retrieved': (r) => validator.success(r),
+      'response time < 2000ms': (r) => r.timings.duration < 2000,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
+    // Export revenue report (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      response = httpHelper.get('/admin/reports/room-booking-revenue/export?page=0&size=20', 'admin', { tags: { name: 'ExportRevenueReport', flow: 'admin' } });
+      const exportSuccess = check(response, {
+        'revenue report exported': (r) => validator.success(r),
+        'response time < 5000ms': (r) => r.timings.duration < 5000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
   });
   
   group('Booking Management Flow', function () {
@@ -452,11 +625,26 @@ function executeAdminFlow() {
       requestCount.add(1);
     }
     
+    // Reject refund (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const rejectData = dataGenerator.bookingNoteRequest();
+      const bookingId = random.id(config.TEST_DATA.bookingIds);
+      url = urlHelper.replaceParams('/bookings/{bookingId}/reject-refund', { bookingId });
+      response = httpHelper.post(url, rejectData, 'admin', { tags: { name: 'RejectRefund', flow: 'admin' } });
+      const rejectSuccess = check(response, {
+        'refund rejected': (r) => validator.accepted(r),
+        'response time < 1500ms': (r) => r.timings.duration < 1500,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
     // Check-in booking (occasionally)
     if (random.intBetween(1, 10) <= 4) { // 40% chance
       const checkInData = dataGenerator.checkInRequest();
       const bookingId = random.id(config.TEST_DATA.bookingIds);
-      let url = urlHelper.replaceParams('/bookings/{bookingId}/check-in', { bookingId });
+      url = urlHelper.replaceParams('/bookings/{bookingId}/check-in', { bookingId });
       response = httpHelper.post(url, checkInData, 'admin', { tags: { name: 'CheckInBooking', flow: 'admin' } });
       const checkInSuccess = check(response, {
         'booking checked in': (r) => validator.accepted(r),
@@ -471,11 +659,164 @@ function executeAdminFlow() {
     if (random.intBetween(1, 10) <= 4) { // 40% chance
       const checkOutData = dataGenerator.checkOutRequest();
       const bookingId = random.id(config.TEST_DATA.bookingIds);
-      let url = urlHelper.replaceParams('/bookings/{bookingId}/check-out', { bookingId });
+      url = urlHelper.replaceParams('/bookings/{bookingId}/check-out', { bookingId });
       response = httpHelper.post(url, checkOutData, 'admin', { tags: { name: 'CheckOutBooking', flow: 'admin' } });
       const checkOutSuccess = check(response, {
         'booking checked out': (r) => validator.accepted(r),
         'response time < 2000ms': (r) => r.timings.duration < 2000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Mark no-show (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const bookingId = random.id(config.TEST_DATA.bookingIds);
+      url = urlHelper.replaceParams('/bookings/{bookingId}/no-show', { bookingId });
+      response = httpHelper.post(url, null, 'admin', { tags: { name: 'MarkNoShow', flow: 'admin' } });
+      const noShowSuccess = check(response, {
+        'no-show marked': (r) => validator.accepted(r),
+        'response time < 1000ms': (r) => r.timings.duration < 1000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+  });
+  
+  group('Configuration Management Flow', function () {
+    // Create add-on (NEW)
+    if (random.intBetween(1, 10) <= 3) { // 30% chance
+      const addOnData = dataGenerator.addOnRequest();
+      response = httpHelper.post('/addons', addOnData, 'admin', { tags: { name: 'CreateAddOn', flow: 'admin' } });
+      const createAddOnSuccess = check(response, {
+        'add-on created': (r) => validator.created(r),
+        'response time < 1500ms': (r) => r.timings.duration < 1500,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Update add-on (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const updateData = dataGenerator.addOnRequest();
+      const addOnId = random.id(config.TEST_DATA.addOnIds);
+      let url = urlHelper.replaceParams('/addons/{addOnId}', { addOnId });
+      response = httpHelper.put(url, updateData, 'admin', { tags: { name: 'UpdateAddOn', flow: 'admin' } });
+      const updateAddOnSuccess = check(response, {
+        'add-on updated': (r) => validator.success(r),
+        'response time < 1500ms': (r) => r.timings.duration < 1500,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Delete add-on (NEW)
+    if (random.intBetween(1, 10) <= 1) { // 10% chance
+      const addOnId = random.id(config.TEST_DATA.addOnIds);
+      url = urlHelper.replaceParams('/addons/{addOnId}', { addOnId });
+      response = httpHelper.delete(url, 'admin', { tags: { name: 'DeleteAddOn', flow: 'admin' } });
+      const deleteAddOnSuccess = check(response, {
+        'add-on deleted': (r) => validator.noContent(r),
+        'response time < 1000ms': (r) => r.timings.duration < 1000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Create amenity (NEW)
+    if (random.intBetween(1, 10) <= 3) { // 30% chance
+      const amenityData = dataGenerator.amenityRequest();
+      response = httpHelper.post('/amenities', amenityData, 'admin', { tags: { name: 'CreateAmenity', flow: 'admin' } });
+      const createAmenitySuccess = check(response, {
+        'amenity created': (r) => validator.created(r),
+        'response time < 1500ms': (r) => r.timings.duration < 1500,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Delete amenity (NEW)
+    if (random.intBetween(1, 10) <= 1) { // 10% chance
+      const amenityId = random.id(config.TEST_DATA.amenityIds);
+      url = urlHelper.replaceParams('/amenities/{amenityId}', { amenityId });
+      response = httpHelper.delete(url, 'admin', { tags: { name: 'DeleteAmenity', flow: 'admin' } });
+      const deleteAmenitySuccess = check(response, {
+        'amenity deleted': (r) => validator.noContent(r),
+        'response time < 1000ms': (r) => r.timings.duration < 1000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Create branch (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const branchData = dataGenerator.branchRequest();
+      response = httpHelper.post('/branches', branchData, 'admin', { tags: { name: 'CreateBranch', flow: 'admin' } });
+      const createBranchSuccess = check(response, {
+        'branch created': (r) => validator.created(r),
+        'response time < 2000ms': (r) => r.timings.duration < 2000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Update branch (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const updateData = dataGenerator.branchRequest();
+      const branchId = random.id(config.TEST_DATA.branchIds);
+      url = urlHelper.replaceParams('/branches/{branchId}', { branchId });
+      response = httpHelper.put(url, updateData, 'admin', { tags: { name: 'UpdateBranch', flow: 'admin' } });
+      const updateBranchSuccess = check(response, {
+        'branch updated': (r) => validator.success(r),
+        'response time < 2000ms': (r) => r.timings.duration < 2000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+  });
+  
+  group('User Management Flow', function () {
+    // Get staff users
+    let response = httpHelper.get('/users/staff?page=0&size=20', 'admin', { tags: { name: 'GetStaffUsers', flow: 'admin' } });
+    const staffSuccess = check(response, {
+      'staff users retrieved': (r) => validator.success(r),
+      'response time < 1200ms': (r) => r.timings.duration < 1200,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
+    // Invite staff (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const staffData = dataGenerator.createStaffRequest();
+      response = httpHelper.post('/users/staff', staffData, 'admin', { tags: { name: 'InviteStaff', flow: 'admin' } });
+      const inviteSuccess = check(response, {
+        'staff invited': (r) => validator.created(r),
+        'response time < 1500ms': (r) => r.timings.duration < 1500,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Update staff role (NEW)
+    if (random.intBetween(1, 10) <= 3) { // 30% chance
+      const staffUpdateData = dataGenerator.updateUserRolesRequest();
+      const userId = random.id(config.TEST_DATA.staffIds);
+      url = urlHelper.replaceParams('/users/staff/{userId}', { userId });
+      response = httpHelper.put(url, staffUpdateData, 'admin', { tags: { name: 'UpdateStaffRole', flow: 'admin' } });
+      const updateStaffSuccess = check(response, {
+        'staff role updated': (r) => validator.success(r),
+        'response time < 1500ms': (r) => r.timings.duration < 1500,
       });
       errorRate.add(response.status >= 400);
       responseTime.add(response.timings.duration);
@@ -529,6 +870,93 @@ function executeEdgeAPIs() {
     const occupancySuccess = check(response, {
       'max occupancy retrieved': (r) => validator.publicEndpoint(r),
       'response time < 1000ms': (r) => r.timings.duration < 1000,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
+    // Form submission (NEW)
+    if (random.intBetween(1, 10) <= 1) { // 10% chance
+      const formData = dataGenerator.formRequest();
+      url = urlHelper.replaceParams('/form/{orgId}/send', { orgId: random.id(config.TEST_DATA.orgIds) });
+      response = httpHelper.post(url, formData, 'none', { tags: { name: 'FormSubmission', flow: 'edge' } });
+      const formSuccess = check(response, {
+        'form submitted': (r) => validator.accepted(r),
+        'response time < 2000ms': (r) => r.timings.duration < 2000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+  });
+  
+  group('Spot Booking Flow', function () {
+    // Add item to admin spot cart (NEW)
+    if (random.intBetween(1, 10) <= 3) { // 30% chance
+      const spotCartData = dataGenerator.adminSpotCartItemRequest();
+      let response = httpHelper.post('/spot-bookings/cart/items', spotCartData, 'admin', { tags: { name: 'AddSpotCartItem', flow: 'spot' } });
+      const addSpotSuccess = check(response, {
+        'spot cart item added': (r) => validator.created(r),
+        'response time < 1500ms': (r) => r.timings.duration < 1500,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Save guest details for spot cart (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const guestData = dataGenerator.guestDetailRequest();
+      let response = httpHelper.post('/spot-bookings/guest-details', guestData, 'admin', { tags: { name: 'SaveSpotGuestDetails', flow: 'spot' } });
+      const guestSuccess = check(response, {
+        'guest details saved': (r) => validator.accepted(r),
+        'response time < 1000ms': (r) => r.timings.duration < 1000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Get admin spot cart (NEW)
+    let response = httpHelper.get('/spot-bookings/cart', 'admin', { tags: { name: 'GetSpotCart', flow: 'spot' } });
+    const getSpotSuccess = check(response, {
+      'spot cart retrieved': (r) => validator.success(r),
+      'response time < 800ms': (r) => r.timings.duration < 800,
+    });
+    errorRate.add(response.status >= 400);
+    responseTime.add(response.timings.duration);
+    requestCount.add(1);
+    
+    // Confirm spot booking and collect payment (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      const paymentData = dataGenerator.spotPaymentCollectionRequest();
+      let response = httpHelper.post('/spot-bookings/cart/confirm', paymentData, 'admin', { tags: { name: 'ConfirmSpotBooking', flow: 'spot' } });
+      const confirmSuccess = check(response, {
+        'spot booking confirmed': (r) => validator.accepted(r),
+        'response time < 3000ms': (r) => r.timings.duration < 3000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // Convert spot cart to booking (NEW)
+    if (random.intBetween(1, 10) <= 2) { // 20% chance
+      let response = httpHelper.post('/spot-bookings/cart/proceed-to-booking', null, 'admin', { tags: { name: 'ConvertSpotToBooking', flow: 'spot' } });
+      const convertSuccess = check(response, {
+        'spot cart converted': (r) => validator.accepted(r),
+        'response time < 2000ms': (r) => r.timings.duration < 2000,
+      });
+      errorRate.add(response.status >= 400);
+      responseTime.add(response.timings.duration);
+      requestCount.add(1);
+    }
+    
+    // List spot bookings (NEW)
+    response = httpHelper.get('/spot-bookings?page=0&size=20', 'admin', { tags: { name: 'ListSpotBookings', flow: 'spot' } });
+    const listSpotSuccess = check(response, {
+      'spot bookings listed': (r) => validator.success(r),
+      'response time < 1200ms': (r) => r.timings.duration < 1200,
     });
     errorRate.add(response.status >= 400);
     responseTime.add(response.timings.duration);

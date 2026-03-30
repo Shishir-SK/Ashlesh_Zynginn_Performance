@@ -1,0 +1,796 @@
+API Controller Reference
+  
+Spring Kotlin · Base prefix: /api/v1 · 19 controllers
+  
+
+Conventions
+
+Convention
+Description
+Base API Prefix
+/api/v1
+Public
+No JWT required in the controller.
+User
+Authenticated user context required.
+Perm:<NAME>
+JWT required and the controller validates the named permission/action set.
+Body
+Shows the request DTO or multipart parts accepted by the endpoint.
+Response
+Most handlers return ResponseEntity<Any>. Exact success/error payloads are produced by the underlying service layer.
+
+Endpoints
+
+Admin
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/admin/dashboard?range=TODAY
+Perm:DASHBOARD(view)
+None
+Fetch admin dashboard metrics.
+GET
+/api/v1/admin/reports/room-booking-revenue
+Perm:DASHBOARD(view)
+Query: RoomBookingRevenueReportRequest
+Fetch room booking revenue report.
+GET
+/api/v1/admin/reports/room-booking-revenue/export
+Perm:DASHBOARD(view)
+Query: RoomBookingRevenueReportRequest
+Export room booking revenue report.
+
+Add-On
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/addons
+Perm:CONFIG(view,modify)
+AddOnRequest
+Create an add-on.
+GET
+/api/v1/addons/branch/{branchId}
+Public
+None
+List add-ons for a branch.
+GET
+/api/v1/addons/{addOnId}
+User
+None
+Fetch add-on by id for the authenticated organization.
+PUT
+/api/v1/addons/{addOnId}
+Perm:CONFIG(view,modify)
+UpdateAddOnRequest
+Update an add-on.
+DELETE
+/api/v1/addons/{addOnId}
+Perm:CONFIG(view,modify)
+None
+Delete an add-on.
+
+Amenity
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/amenities
+Perm:CONFIG(view,modify)
+AmenityRequest
+Create an amenity.
+GET
+/api/v1/amenities/branch/{branchId}
+Public
+None
+List amenities for a branch.
+DELETE
+/api/v1/amenities/{amenityId}
+Perm:CONFIG(view,modify)
+None
+Delete an amenity.
+
+Audit Log
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/admin/audit-logs
+Perm:LOGS(view)
+Query: page, size, branchId, entityType[], action[], changedBy
+List audit logs with filters.
+
+Booking
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/bookings/
+Perm:BOOKING(view)
+Query: page, size, status, search
+List bookings.
+GET
+/api/v1/bookings/refund
+Perm:BOOKING(view)
+Query: page, size, status, search
+List refund-related bookings.
+GET
+/api/v1/bookings/me
+User
+None
+List bookings created by the logged-in user.
+POST
+/api/v1/bookings/
+User
+BookingRequest
+Create a booking.
+POST
+/api/v1/bookings/{bookingId}/cancel
+User or Perm:BOOKING(view,modify)
+None
+Cancel a booking.
+POST
+/api/v1/bookings/{bookingId}/reject-refund
+Perm:BOOKING(view,modify)
+BookingNoteRequest
+Reject a refund request.
+POST
+/api/v1/bookings/{bookingId}/refund
+Perm:BOOKING(view,modify)
+Optional BookingNoteRequest
+Refund a cancelled booking.
+POST
+/api/v1/bookings/{bookingId}/modify?admin=false
+User or staff with booking modify access
+ModifyBookingRequest
+Modify a confirmed booking.
+GET
+/api/v1/bookings/{bookingId}/credits
+User
+None
+Get active credit notes available to the booking guest.
+POST
+/api/v1/bookings/payment/webhook
+Public
+Raw webhook payload; headers X-Razorpay-Signature, X-Razorpay-Event-Id
+Handle Razorpay webhook callbacks.
+GET
+/api/v1/bookings/{bookingId}
+User or Perm:BOOKING(view)
+None
+Get booking by id.
+GET
+/api/v1/bookings/{bookingId}/invoice
+User or Perm:BOOKING(view)
+None
+Download booking invoice PDF.
+GET
+/api/v1/bookings/{bookingId}/activity
+Perm:BOOKING(view)
+None
+Get booking status/activity history.
+GET
+/api/v1/bookings/{bookingId}/financial-history
+Perm:BOOKING(view)
+None
+Get booking financial history timeline.
+GET
+/api/v1/bookings/{bookingId}/refund-estimate
+User
+None
+Get refund estimate for a booking.
+POST
+/api/v1/bookings/{bookingId}/check-in
+Perm:BOOKING(view,modify)
+Multipart: optional idImage + idType, idNumber, roomNumber, collectAmount, securityDeposit
+Move booking from confirmed to checked-in.
+POST
+/api/v1/bookings/{bookingId}/check-out
+Perm:BOOKING(view,modify)
+Optional BookingNotesUpdateRequest
+Move booking from checked-in to checked-out.
+POST
+/api/v1/bookings/{bookingId}/no-show
+Perm:BOOKING(view,modify)
+None
+Mark booking as no-show.
+
+Branch
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/branches/{orgId}
+Public
+None
+List branches for an organization.
+GET
+/api/v1/branches/public/{branchId}
+Public
+None
+Fetch public branch details by id.
+POST
+/api/v1/branches
+Perm:BRANCH(view,modify)
+BranchRequest
+Create a branch.
+PUT
+/api/v1/branches/{branchId}
+Perm:BRANCH(view,modify)
+BranchRequest
+Update a branch.
+POST
+/api/v1/branches/{branchId}/deactivate
+Perm:BRANCH(view,modify)
+None
+Deactivate a branch.
+POST
+/api/v1/branches/{branchId}/activate
+Perm:BRANCH(view,modify)
+None
+Activate a branch.
+
+Cart
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/cart/items
+User
+CartItemRequest
+Add an item to cart.
+PUT
+/api/v1/cart/items/{cartItemId}
+User
+EditCartRequest
+Update cart item quantity/details.
+GET
+/api/v1/cart/items?checkIn=&checkOut=
+User
+Query: optional checkIn, checkOut
+Fetch cart, optionally recalculated for a date range.
+DELETE
+/api/v1/cart/items/{cartItemId}
+User
+None
+Remove an item from cart.
+DELETE
+/api/v1/cart/items/{cartItemId}/decrement
+User
+None
+Decrement cart item quantity.
+DELETE
+/api/v1/cart
+User
+None
+Clear the entire cart.
+POST
+/api/v1/cart/checkout
+User
+None
+Checkout the current cart.
+
+Contact Details
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/contact-details/branch/{branchId}
+Public
+None
+Get branch contact details.
+
+Discount Rule
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/discount-rules/branch/{branchId}
+Perm:CONFIG(view)
+None
+List discount rules for a branch.
+GET
+/api/v1/discount-rules/{discountRuleId}
+Perm:CONFIG(view)
+None
+Get a discount rule by id.
+POST
+/api/v1/discount-rules
+Perm:CONFIG(view,modify)
+DiscountRuleUpsertRequest
+Create a discount rule.
+PUT
+/api/v1/discount-rules/{discountRuleId}
+Perm:CONFIG(view,modify)
+DiscountRuleUpsertRequest
+Update a discount rule.
+DELETE
+/api/v1/discount-rules/{discountRuleId}
+Perm:CONFIG(view,modify)
+None
+Delete a discount rule.
+
+Form
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/form/{orgId}/send
+Public
+FormRequest
+Submit a form and send email notification.
+
+Hotel
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/hotels/branch/{branchId}/details
+Perm:HOTEL(view)
+None
+List hotel details for a branch. Admins see all; others see active only.
+GET
+/api/v1/hotels/max-occupancy/{branchId}
+Public
+None
+Get max occupancy across room types in a branch.
+GET
+/api/v1/hotels/{hotelId}
+Public
+Query: optional checkIn, checkOut
+Get a single hotel by id.
+POST
+/api/v1/hotels/add-room
+Perm:HOTEL(view,modify)
+Multipart: data JSON + optional images[]
+Create a new hotel/room configuration.
+PUT
+/api/v1/hotels/{hotelId}
+Perm:HOTEL(view,modify)
+Multipart: data JSON + optional images[]
+Update hotel details and images.
+GET
+/api/v1/hotels/branches/{branchId}/hotels/availability
+Public
+Query: checkIn, checkOut, adults, children, rooms, roomCategory, subCategory, priceFilter
+List hotels with availability and filters.
+DELETE
+/api/v1/hotels/{hotelId}
+Perm:HOTEL(view,modify)
+None
+Soft delete a hotel.
+PUT
+/api/v1/hotels/{hotelId}/restore
+Perm:HOTEL(view,modify)
+None
+Restore a soft-deleted hotel.
+PUT
+/api/v1/hotels/update-order/{hotelId}
+Perm:HOTEL(view,modify)
+UpdateHotelOrderRequest
+Update hotel display order.
+GET
+/api/v1/hotels/branch/{branchId}/rooms-by-category
+Public
+None
+Get the cheapest room per category for a branch.
+
+Organization Settings
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/organization-settings
+Perm:CONFIG(view)
+None
+Get all organization settings for the authenticated org.
+GET
+/api/v1/organization-settings/config/{orgId}
+Public
+None
+Get public organization config by org id.
+POST
+/api/v1/organization-settings/refund-policy
+Perm:REFUND_POLICY(view,modify)
+EnableRefundPolicyRequest
+Enable or disable refund policy.
+GET
+/api/v1/organization-settings/child-threshold
+Perm:CONFIG(view)
+None
+Get child threshold age.
+POST
+/api/v1/organization-settings/child-threshold
+Perm:CONFIG(view,modify)
+SetChildThresholdRequest
+Set child threshold age.
+GET
+/api/v1/organization-settings/razorpay
+Perm:CONFIG(view)
+None
+Get Razorpay settings.
+POST
+/api/v1/organization-settings/razorpay
+Perm:CONFIG(view,modify)
+RazorpaySettingsRequest
+Update Razorpay settings.
+GET
+/api/v1/organization-settings/booking-threshold
+Perm:CONFIG(view)
+None
+Get booking threshold.
+POST
+/api/v1/organization-settings/booking-threshold
+Perm:CONFIG(view,modify)
+SetBookingThresholdRequest
+Update booking threshold.
+GET
+/api/v1/organization-settings/tax-percentage
+Perm:CONFIG(view)
+None
+Get tax percentage.
+POST
+/api/v1/organization-settings/tax-percentage
+Perm:CONFIG(view,modify)
+SetTaxPercentageRequest
+Update tax percentage.
+GET
+/api/v1/organization-settings/processing-fee
+Perm:CONFIG(view)
+None
+Get processing fee settings.
+POST
+/api/v1/organization-settings/processing-fee
+Perm:CONFIG(view,modify)
+SetProcessingFeeRequest
+Update processing fee settings.
+GET
+/api/v1/organization-settings/max-nights-threshold
+Perm:CONFIG(view)
+None
+Get max nights threshold.
+POST
+/api/v1/organization-settings/max-nights-threshold
+Perm:CONFIG(view,modify)
+SetMaxNightsThresholdRequest
+Update max nights threshold.
+GET
+/api/v1/organization-settings/credit-note-validity
+Perm:CONFIG(view)
+None
+Get credit note validity.
+POST
+/api/v1/organization-settings/credit-note-validity
+Perm:CONFIG(view,modify)
+SetCreditNoteValidityRequest
+Update credit note validity.
+
+Refund Policy
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/refund-policies
+Perm:REFUND_POLICY(view,modify)
+RefundPolicyUpsertRequest
+Create a refund policy.
+GET
+/api/v1/refund-policies
+Perm:REFUND_POLICY(view)
+None
+List refund policies for the authenticated org.
+PUT
+/api/v1/refund-policies/{refundPolicyId}
+Perm:REFUND_POLICY(view,modify)
+RefundPolicyUpsertRequest
+Update a refund policy.
+DELETE
+/api/v1/refund-policies/{refundPolicyId}
+Perm:REFUND_POLICY(view,modify)
+None
+Delete a refund policy.
+
+Review
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/reviews/form?bookingId=&token=
+Public
+None
+Load review form details from a secure booking link.
+POST
+/api/v1/reviews/submit?bookingId=&token=
+Public
+Multipart: data JSON as GuestReviewSubmitRequest + optional photos[]
+Submit a guest review.
+GET
+/api/v1/reviews/public?orgId=&page=&size=
+Public
+None
+List approved public reviews.
+GET
+/api/v1/reviews/public/summary?orgId=
+Public
+None
+Get public rating summary.
+GET
+/api/v1/reviews/admin
+Perm:REVIEW(view)
+Query: page, size, status
+List reviews for moderation.
+POST
+/api/v1/reviews/{reviewId}/approve
+Perm:REVIEW(view,modify)
+None
+Approve a review.
+POST
+/api/v1/reviews/{reviewId}/reject
+Perm:REVIEW(view,modify)
+Optional ReviewModerationRequest
+Reject a review with optional reason.
+POST
+/api/v1/reviews/{reviewId}/hide
+Perm:REVIEW(view,modify)
+None
+Hide an approved review.
+
+Role
+
+Method
+Path
+Auth
+Body
+Purpose
+GET
+/api/v1/roles
+Perm:ROLE(view)
+None
+List roles.
+GET
+/api/v1/roles/{roleId}
+Perm:ROLE(view)
+None
+Get role by id.
+GET
+/api/v1/roles/allowed-permissions
+Perm:ROLE(view)
+None
+List allowed permission keys/actions for role setup.
+POST
+/api/v1/roles
+Perm:ROLE(view,modify)
+CreateRoleRequest
+Create a role.
+DELETE
+/api/v1/roles/{roleId}
+Perm:ROLE(view,modify)
+None
+Delete a role.
+PUT
+/api/v1/roles/{roleId}
+Perm:ROLE(view,modify)
+UpdateRoleRequest
+Update a role.
+
+Spot Booking
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/spot-bookings/cart/items
+Perm:SPOT_CART(view,modify)
+AdminSpotCartItemRequest
+Add item to admin spot cart.
+POST
+/api/v1/spot-bookings/guest-details
+Perm:SPOT_CART(view,modify)
+GuestDetail
+Save guest details for the spot cart.
+GET
+/api/v1/spot-bookings/cart
+Perm:SPOT_CART(view)
+None
+Get admin spot cart.
+POST
+/api/v1/spot-bookings/cart/confirm
+Perm:SPOT_CART(view,modify)
+SpotPaymentCollectionRequest
+Confirm spot booking and collect payment.
+POST
+/api/v1/spot-bookings/cart/proceed-to-booking
+Perm:SPOT_CART(view,modify)
+None
+Convert spot cart into booking flow.
+DELETE
+/api/v1/spot-bookings/cart/items/{cartItemId}
+Perm:SPOT_CART(view,modify)
+None
+Remove a spot cart item.
+PUT
+/api/v1/spot-bookings/cart/items/{cartItemId}
+Perm:SPOT_CART(view,modify)
+EditCartRequest
+Update a spot cart item.
+DELETE
+/api/v1/spot-bookings/cart/items/{cartItemId}/decrement
+Perm:SPOT_CART(view,modify)
+None
+Decrement a spot cart item.
+DELETE
+/api/v1/spot-bookings/cart
+Perm:SPOT_CART(view,modify)
+None
+Clear admin spot cart.
+GET
+/api/v1/spot-bookings
+Perm:SPOT_CART(view)
+Query: page, size, status, search
+List spot bookings.
+
+Sub-Category
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/sub-categories/create
+Perm:CONFIG(view,modify)
+SubCategoryRequest
+Create a sub-category.
+PUT
+/api/v1/sub-categories/{subCategoryId}
+Perm:CONFIG(view,modify)
+SubCategoryRequest
+Update a sub-category.
+GET
+/api/v1/sub-categories/branch/{branchId}
+Public
+None
+List sub-categories for a branch.
+DELETE
+/api/v1/sub-categories/{subCategoryId}
+Perm:CONFIG(view,modify)
+None
+Delete a sub-category.
+
+User
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/users/staff
+Perm:STAFF(view,modify)
+CreateStaffRequest
+Invite a staff user.
+POST
+/api/v1/users/staff/accept-invite
+Public
+AcceptStaffInviteRequest
+Accept a staff invite.
+PUT
+/api/v1/users/staff/{userId}/activate
+Perm:STAFF(view,modify)
+None
+Activate a staff user.
+PUT
+/api/v1/users/staff/{userId}/deactivate
+Perm:STAFF(view,modify)
+None
+Deactivate a staff user.
+PUT
+/api/v1/users/staff/{userId}
+Perm:STAFF(modify)
+UpdateUserRolesRequest
+Update staff role/branch mapping.
+GET
+/api/v1/users/{userId}
+Perm:USER(view)
+None
+Get a user by id.
+GET
+/api/v1/users/staff
+Perm:STAFF(view)
+Query: page, size, status, role, search, branches[]
+List non-customer users.
+GET
+/api/v1/users/me
+User
+None
+Get logged-in user profile.
+GET
+/api/v1/users/me/permissions
+User
+None
+Get current user's permissions.
+GET
+/api/v1/users/me/credit-notes?userId=
+User
+Optional query userId for admins
+Get credit notes for the current user or a target user (admin only).
+PUT
+/api/v1/users/me
+User
+UserUpdateRequest
+Update logged-in user profile.
+POST
+/api/v1/users/me/image
+User
+Multipart: image
+Upload profile image.
+
+Voucher
+
+Method
+Path
+Auth
+Body
+Purpose
+POST
+/api/v1/vouchers
+Perm:CONFIG(view,modify)
+VoucherRequest
+Create a voucher.
+GET
+/api/v1/vouchers/branch/{branchId}
+Public
+None
+List vouchers for a branch.
+DELETE
+/api/v1/vouchers/{voucherId}
+Perm:CONFIG(view,modify)
+None
+Delete a voucher.
+
