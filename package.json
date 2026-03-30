@@ -1,0 +1,54 @@
+{
+  "name": "hotel-booking-performance-tests",
+  "version": "1.0.0",
+  "description": "Complete load and performance testing suite for Hotel Booking Backend API",
+  "main": "scripts/report-generator.js",
+  "scripts": {
+    "test:smoke": "k6 run --vus 5 --duration 30s tests/smoke-test.js",
+    "test:complete": "k6 run tests/complete-load-test.js",
+    "test:complete-with-json": "k6 run --out json=reports/results-$(date +%Y%m%d_%H%M%S).json tests/complete-load-test.js",
+    "test:booking-focused": "k6 run --out json=reports/booking-focused-$(date +%Y%m%d_%H%M%S).json tests/booking-focused-test.js",
+    "test:cart-focused": "k6 run --out json=reports/cart-focused-$(date +%Y%m%d_%H%M%S).json tests/cart-focused-test.js",
+    "test:admin-focused": "k6 run --out json=reports/admin-focused-$(date +%Y%m%d_%H%M%S).json tests/admin-focused-test.js",
+    "test:all-focused": "npm run test:booking-focused && npm run test:cart-focused && npm run test:admin-focused",
+    "test:focused-reports": "node scripts/focused-test-runner.js",
+    "report:generate": "node scripts/report-generator.js",
+    "test:full": "./run-performance-test.sh",
+    "test:quick": "./run-performance-test.sh --quick",
+    "test:smoke-only": "./run-performance-test.sh --smoke-only",
+    "setup": "npm install && chmod +x run-performance-test.sh",
+    "clean": "rm -rf reports/* logs/*",
+    "install-deps": "npm install puppeteer",
+    "help": "echo 'Available scripts: test:smoke, test:complete, test:booking-focused, test:cart-focused, test:admin-focused, test:all-focused, test:focused-reports, test:full, test:quick, setup, clean'"
+  },
+  "keywords": [
+    "k6",
+    "performance-testing",
+    "load-testing",
+    "api-testing",
+    "hotel-booking",
+    "backend",
+    "automation",
+    "reporting"
+  ],
+  "author": "Performance Engineering Team",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.5.0"
+  },
+  "devDependencies": {
+    "k6": "^0.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/hotel-booking-performance-tests.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/hotel-booking-performance-tests/issues"
+  },
+  "homepage": "https://github.com/your-org/hotel-booking-performance-tests#readme"
+}
