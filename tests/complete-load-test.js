@@ -2,9 +2,10 @@
 // Production-ready script with all functional flows
 
 import http from 'k6/http';
-import { check, sleep, group } from 'k6';
+import { check, sleep, group, fail } from 'k6';
 import { Rate, Trend, Counter } from 'k6/metrics';
 import { config } from '../lib/enhanced-config.js';
+import { setupAuth, getAuthHeaders } from '../lib/auth-helper.js';
 import { 
   random, 
   httpHelper, 
@@ -12,8 +13,12 @@ import {
   validator, 
   trafficSelector, 
   urlHelper,
-  thinkTime 
+  thinkTime,
+  initHelpers
 } from '../lib/test-helpers.js';
+
+// Global auth data (passed from setup to VUs)
+let authData = null;
 
 // Custom metrics
 export let errorRate = new Rate('errors');
@@ -61,8 +66,40 @@ export let options = {
   },
 };
 
+// Setup function - runs once globally to get auth tokens
+export function setup() {
+  console.log('Starting Hotel Booking Backend Load Test...');
+  console.log(`Environment: ${config.ENV}`);
+  console.log(`Target API: ${config.BASE_URL}`);
+  console.log(`Traffic Distribution: ${JSON.stringify(config.LOAD_CONFIG.trafficDistribution)}`);
+  
+  // Validate environment variables
+  if (!__ENV.USER_EMAIL || !__ENV.USER_PASSWORD) {
+    throw new Error('Missing required environment variables: USER_EMAIL, USER_PASSWORD');
+  }
+  if (!__ENV.ADMIN_EMAIL || !__ENV.ADMIN_PASSWORD) {
+    throw new Error('Missing required environment variables: ADMIN_EMAIL, ADMIN_PASSWORD');
+  }
+  
+  // Authenticate once and pass tokens to VUs
+  const tokens = setupAuth();
+  
+  // Initialize helpers with auth data
+  initHelpers(tokens);
+  
+  console.log('Authentication successful. Starting load test...');
+  
+  return tokens;
+}
+
 // Main test function
-export default function () {
+export default function (tokens) {
+  // Store tokens for use in this VU
+  authData = tokens;
+  
+  // Initialize helpers with auth data (per-VU)
+  initHelpers(authData);
+  
   const flow = trafficSelector.selectFlow();
   
   switch (flow) {
@@ -77,7 +114,7 @@ export default function () {
       break;
   }
   
-  // Execute edge APIs (CRITICAL FIX)
+  // Execute edge APIs
   executeEdgeAPIs();
   
   // Random think time between requests
