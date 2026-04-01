@@ -8,7 +8,7 @@
  */
 export const SMOKE = {
   executor: 'per-vu-iterations',
-  vus: 1,
+  vus: 10,
   iterations: 5,
   maxDuration: '1m'
 };

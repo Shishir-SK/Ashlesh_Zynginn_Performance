@@ -2,7 +2,7 @@
 // Uses setup() pattern to prevent login endpoint DDoS
 
 import http from 'k6/http';
-import { fail } from 'k6';
+import { fail, sleep } from 'k6';
 import { config } from '../config/env.js';
 
 const MAX_RETRIES = 3;
@@ -31,60 +31,92 @@ function decodeJWTExpiry(token) {
 }
 
 /**
- * Login with retry logic
+ * Login with retry logic and hard failures using FastAPI Auth Service
  * @param {string} type - 'user' or 'admin'
- * @param {string} baseUrl - API base URL
- * @returns {object} token data
+ * @param {string} baseUrl - API base URL (auth service is separate)
+ * @returns {object} token data with expiry
  */
 function loginWithRetry(type, baseUrl) {
   const credentials = config.AUTH[type.toUpperCase()];
-  const loginUrl = `${baseUrl}/auth/login`;
   
-  const payload = JSON.stringify({
-    email: credentials.email,
-    password: credentials.password
-  });
+  // FastAPI auth service endpoint
+  const loginUrl = 'https://staging.authapi.hotelashleshmanipal.com/api/authorize/v2/signin';
+  
+  // Form data payload for FastAPI
+  const payload = `username=${encodeURIComponent(credentials.email)}&password=${encodeURIComponent(credentials.password)}&organization_id=a9395930-21bb-4a28-8e48-8bdf71294f62`;
   
   let lastError = null;
   let response = null;
   
+  // Retry loop
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     if (attempt > 0) {
-      const delay = RETRY_DELAY_MS * attempt;
-      const start = Date.now();
-      while (Date.now() - start < delay) {}
+      // Wait before retry
+      const delay = Math.min(RETRY_DELAY_MS * attempt, 5000);
+      sleep(parseFloat(delay) / 1000);
     }
     
     response = http.post(loginUrl, payload, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
+      },
       timeout: '10s'
     });
     
     if (response.status === 200) {
-      break;
+      break; // Success
     }
     
-    lastError = `Status ${response.status}`;
+    lastError = `Status ${response.status}: ${response.body || 'Unknown error'}`;
+    console.error(`Login attempt ${attempt + 1} failed: ${lastError}`);
   }
   
+  // Final validation - hard fail if login fails
   if (!response || response.status !== 200) {
-    fail(`FATAL: ${type} login failed after ${MAX_RETRIES} attempts`);
+    fail(`FATAL: ${type} login failed after ${MAX_RETRIES} attempts. Last error: ${lastError}`);
   }
   
-  const body = response.json();
-  const token = body.token || body.accessToken || body.jwt;
+  // Extract and validate token
+  let token = null;
+  let expiresAt = 0;
   
-  if (!token) {
-    fail(`FATAL: No token in ${type} login response`);
+  try {
+    const body = JSON.parse(response.body);
+    
+    // FastAPI response structure: { data: { access_token, expires_in, ... } }
+    if (body.success && body.data) {
+      token = body.data.access_token;
+      expiresAt = body.data.expires_in 
+        ? Date.now() + (body.data.expires_in * 1000)
+        : decodeJWTExpiry(token);
+    } else {
+      throw new Error('Invalid response structure');
+    }
+    
+    // Validate token exists
+    if (!token) {
+      console.error('Login response body:', JSON.stringify(body));
+      fail(`FATAL: No access_token field found in ${type} login response`);
+    }
+    
+    // Default to 1 hour if no expiry found
+    if (!expiresAt) {
+      expiresAt = Date.now() + (60 * 60 * 1000);
+      console.warn(`No token expiry found for ${type}, defaulting to 1 hour`);
+    }
+    
+    console.log(`${type} login successful. Token expires: ${new Date(expiresAt).toISOString()}`);
+    
+  } catch (e) {
+    console.error('Login response:', response.body);
+    fail(`FATAL: Failed to parse ${type} login response: ${e.message}`);
   }
-  
-  const expiresAt = body.expiresIn 
-    ? Date.now() + (body.expiresIn * 1000)
-    : decodeJWTExpiry(token);
   
   return {
     token: token,
-    expiresAt: expiresAt || Date.now() + (60 * 60 * 1000)
+    expiresAt: expiresAt,
+    type: type
   };
 }
 

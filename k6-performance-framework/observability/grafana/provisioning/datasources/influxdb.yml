@@ -1,0 +1,16 @@
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB-k6
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: k6-org
+      defaultBucket: k6-bucket
+      tlsSkipVerify: true
+    secureJsonData:
+      token: adminpassword
+    isDefault: true
+    editable: false

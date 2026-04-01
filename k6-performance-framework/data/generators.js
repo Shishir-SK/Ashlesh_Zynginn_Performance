@@ -181,3 +181,34 @@ export function generateStaffInvitation() {
     role: randomItem(['receptionist', 'manager', 'admin'])
   };
 }
+
+/**
+ * Generate test data for various operations
+ * @returns {object} test data generators
+ */
+export function generateTestData() {
+  return {
+    searchParameters: () => ({
+      location: randomItem(['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata']),
+      checkin: '2024-04-01',
+      checkout: '2024-04-03',
+      guests: randomInt(1, 4)
+    }),
+    
+    bookingData: () => ({
+      hotelId: randomInt(1, 10),
+      checkIn: '2024-04-01',
+      checkOut: '2024-04-03',
+      guests: randomInt(1, 4),
+      rooms: randomInt(1, 2),
+      guestDetails: generateGuestDetails()
+    }),
+    
+    cartItem: () => ({
+      roomId: randomInt(1, 20),
+      quantity: 1,
+      checkIn: '2024-04-01',
+      checkOut: '2024-04-03'
+    })
+  };
+}
