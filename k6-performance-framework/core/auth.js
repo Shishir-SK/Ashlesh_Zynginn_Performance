@@ -39,11 +39,14 @@ function decodeJWTExpiry(token) {
 function loginWithRetry(type, baseUrl) {
   const credentials = config.AUTH[type.toUpperCase()];
   
-  // FastAPI auth service endpoint
-  const loginUrl = 'https://staging.authapi.hotelashleshmanipal.com/api/authorize/v2/signin';
+  // Use the main API auth endpoint, not separate auth service
+  const loginUrl = `${baseUrl}/auth/login`;
   
-  // Form data payload for FastAPI
-  const payload = `username=${encodeURIComponent(credentials.email)}&password=${encodeURIComponent(credentials.password)}&organization_id=a9395930-21bb-4a28-8e48-8bdf71294f62`;
+  // JSON payload for main API auth
+  const payload = JSON.stringify({
+    email: credentials.email,
+    password: credentials.password
+  });
   
   let lastError = null;
   let response = null;
@@ -58,7 +61,7 @@ function loginWithRetry(type, baseUrl) {
     
     response = http.post(loginUrl, payload, {
       headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
       timeout: '10s'

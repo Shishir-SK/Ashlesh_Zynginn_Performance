@@ -21,7 +21,7 @@ const BASE_URLS = {
 
 // Validate and get credentials
 function getCredentials() {
-  const userEmail = __ENV.USER_EMAIL || 'shishir+dhoni@codezyng.com';
+  const userEmail = __ENV.USER_EMAIL || 'shishir@codezyng.com';
   const userPassword = __ENV.USER_PASSWORD || 'Test1234';
   const adminEmail = __ENV.ADMIN_EMAIL || 'adityashekhar@codezyng.com';
   const adminPassword = __ENV.ADMIN_PASSWORD || 'test1234';

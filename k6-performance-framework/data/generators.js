@@ -183,6 +183,82 @@ export function generateStaffInvitation() {
 }
 
 /**
+ * Generate payment request payload
+ * @returns {object} payment request
+ */
+export function generatePaymentRequest() {
+  return {
+    amount: randomInt(100, 5000) * 100, // Convert to cents
+    currency: randomItem(['USD', 'EUR', 'GBP', 'INR']),
+    paymentMethod: randomItem(['credit_card', 'debit_card', 'upi', 'wallet']),
+    paymentType: randomItem(['booking_payment', 'deposit', 'full_payment']),
+    description: `Payment for booking ${randomString(8).toUpperCase()}`,
+    metadata: {
+      source: 'web',
+      userAgent: 'k6-test',
+      sessionId: randomString(16)
+    },
+    cardDetails: {
+      number: '4111111111111111', // Test card number
+      expiryMonth: randomInt(1, 12).toString().padStart(2, '0'),
+      expiryYear: (new Date().getFullYear() + randomInt(1, 5)).toString(),
+      cvv: randomInt(100, 999).toString()
+    }
+  };
+}
+
+/**
+ * Generate billing request payload
+ * @returns {object} billing request
+ */
+export function generateBillingRequest() {
+  return {
+    invoiceType: randomItem(['booking', 'service', 'amenity', 'penalty']),
+    dueDate: new Date(Date.now() + randomInt(7, 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    items: [
+      {
+        description: randomItem(['Room charges', 'Service fees', 'Amenities', 'Late checkout']),
+        quantity: randomInt(1, 5),
+        unitPrice: randomInt(50, 500) * 100,
+        taxRate: randomInt(5, 25)
+      }
+    ],
+    customerInfo: {
+      name: `${randomString(5)} Customer`,
+      email: `billing.${randomString(6)}@test.com`,
+      phone: `+1${randomInt(1000000000, 9999999999)}`
+    },
+    notes: randomItem(['', 'Urgent payment required', 'Payment due soon', 'Standard billing']),
+    metadata: {
+      generatedBy: 'system',
+      template: 'standard'
+    }
+  };
+}
+
+/**
+ * Generate subscription request payload
+ * @returns {object} subscription request
+ */
+export function generateSubscriptionRequest() {
+  return {
+    planType: randomItem(['basic', 'premium', 'enterprise']),
+    billingCycle: randomItem(['monthly', 'yearly']),
+    features: randomItem([
+      ['room_booking', 'cancellation'],
+      ['room_booking', 'cancellation', 'priority_support'],
+      ['room_booking', 'cancellation', 'priority_support', 'analytics']
+    ]),
+    startDate: new Date().toISOString().split('T')[0],
+    autoRenew: randomItem([true, false]),
+    metadata: {
+      source: 'web_signup',
+      campaign: randomItem(['spring_sale', 'new_user', 'upgrade_offer'])
+    }
+  };
+}
+
+/**
  * Generate test data for various operations
  * @returns {object} test data generators
  */

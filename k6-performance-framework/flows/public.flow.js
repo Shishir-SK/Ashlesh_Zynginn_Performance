@@ -65,6 +65,33 @@ export function publicFlow(authData) {
     
     recordMetrics('public_availability', availabilityResponse);
     
+    // 6. Get public hotel listings
+    const hotelsResponse = httpClient.get(
+      `/hotels/public?orgId=${ORG_ID}&page=0&size=10`,
+      null,
+      'none'
+    );
+    
+    recordMetrics('public_hotels', hotelsResponse);
+    
+    // 7. Get public amenities
+    const amenitiesResponse = httpClient.get(
+      `/amenities/public?orgId=${ORG_ID}`,
+      null,
+      'none'
+    );
+    
+    recordMetrics('public_amenities', amenitiesResponse);
+    
+    // 8. Get public pricing
+    const pricingResponse = httpClient.get(
+      `/pricing/public?orgId=${ORG_ID}&branchId=${BRANCH_ID}`,
+      null,
+      'none'
+    );
+    
+    recordMetrics('public_pricing', pricingResponse);
+    
     // Think time between requests
     sleep(1 + Math.random() * 2); // 1-3 seconds
     

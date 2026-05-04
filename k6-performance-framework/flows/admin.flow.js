@@ -32,10 +32,40 @@ export function adminFlow(authData) {
   group('Admin Flow', () => {
     viewDashboard(authData);
     getAuditLogs(authData);
+    getSystemMetrics(authData);
+    getUserManagement(authData);
+    getFinancialReports(authData);
+    getRevenueReports(authData);
     manageBookings(authData);
+    maybeManageSpotBookings(authData);
     maybeManageConfiguration(authData);
     manageStaff(authData);
+    maybeManageHotels(authData);
+    maybeManageAmenities(authData);
+    maybeManageBranches(authData);
+    getBranchesByOrgId(authData);
   });
+}
+
+/**
+ * Get branches by organization ID
+ */
+function getBranchesByOrgId(authData) {
+  const ORG_ID = 'a9395930-21bb-4a28-8e48-8bdf71294f62';
+  const response = httpClient.get(
+    `/branches/${ORG_ID}`,
+    authData,
+    'admin',
+    { tags: { name: 'GetBranchesByOrgId', flow: 'admin', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'branches by org retrieved': (r) => r.status === 200,
+    'branches by org response time OK': (r) => r.timings.duration < 1500
+  });
+  
+  recordMetrics(response, 'admin', 1500);
+  sleep(randomInt(1, 2));
 }
 
 /**
@@ -315,5 +345,246 @@ function manageStaff(authData) {
     recordMetrics(inviteResponse, 'admin', 1500);
   }
   
-  sleep(randomInt(1, 3));
+  sleep(randomInt(1, 2));
+}
+
+/**
+ * Get system metrics
+ */
+function getSystemMetrics(authData) {
+  const response = httpClient.get(
+    '/admin/metrics?range=TODAY',
+    authData,
+    'admin',
+    { tags: { name: 'GetSystemMetrics', flow: 'admin', criticality: 'high' } }
+  );
+  
+  check(response, {
+    'system metrics retrieved': (r) => r.status === 200,
+    'metrics response time OK': (r) => r.timings.duration < 2000
+  });
+  
+  recordMetrics(response, 'admin', 2000);
+  sleep(randomInt(1, 2));
+}
+
+/**
+ * Get user management data
+ */
+function getUserManagement(authData) {
+  const response = httpClient.get(
+    '/admin/users?page=0&size=50',
+    authData,
+    'admin',
+    { tags: { name: 'GetUserManagement', flow: 'admin', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'user management data retrieved': (r) => r.status === 200,
+    'user management response time OK': (r) => r.timings.duration < 1500
+  });
+  
+  recordMetrics(response, 'admin', 1500);
+  sleep(randomInt(1, 2));
+}
+
+/**
+ * Get financial reports
+ */
+function getFinancialReports(authData) {
+  const response = httpClient.get(
+    '/admin/reports/financial?range=MONTH',
+    authData,
+    'admin',
+    { tags: { name: 'GetFinancialReports', flow: 'admin', criticality: 'high' } }
+  );
+  
+  check(response, {
+    'financial reports retrieved': (r) => r.status === 200,
+    'financial reports response time OK': (r) => r.timings.duration < 3000
+  });
+  
+  recordMetrics(response, 'admin', 3000);
+  sleep(randomInt(1, 2));
+}
+
+/**
+ * Maybe manage hotels
+ */
+function maybeManageHotels(authData) {
+  if (Math.random() < 0.3) { // 30% chance
+    // Get hotels list
+    const response = httpClient.get(
+      '/admin/hotels?page=0&size=20',
+      authData,
+      'admin',
+      { tags: { name: 'GetHotels', flow: 'admin', criticality: 'medium' } }
+    );
+    
+    check(response, {
+      'hotels retrieved': (r) => r.status === 200,
+      'hotels response time OK': (r) => r.timings.duration < 1500
+    });
+    
+    recordMetrics(response, 'admin', 1500);
+    sleep(randomInt(1, 2));
+  }
+}
+
+/**
+ * Maybe manage amenities
+ */
+function maybeManageAmenities(authData) {
+  if (Math.random() < 0.2) { // 20% chance
+    // Get amenities list
+    const response = httpClient.get(
+      '/admin/amenities?page=0&size=30',
+      authData,
+      'admin',
+      { tags: { name: 'GetAmenities', flow: 'admin', criticality: 'low' } }
+    );
+    
+    check(response, {
+      'amenities retrieved': (r) => r.status === 200,
+      'amenities response time OK': (r) => r.timings.duration < 1200
+    });
+    
+    recordMetrics(response, 'admin', 1200);
+    
+    // Maybe add new amenity
+    if (Math.random() < 0.3) {
+      const amenityData = generateAmenityRequest();
+      const addResponse = httpClient.post(
+        '/admin/amenities',
+        amenityData,
+        authData,
+        'admin',
+        { tags: { name: 'AddAmenity', flow: 'admin', criticality: 'low' } }
+      );
+      
+      check(addResponse, {
+        'amenity added': (r) => r.status === 201,
+        'add amenity time OK': (r) => r.timings.duration < 1500
+      });
+      
+      recordMetrics(addResponse, 'admin', 1500);
+    }
+    
+    sleep(randomInt(1, 2));
+  }
+}
+
+/**
+ * Maybe manage branches
+ */
+function maybeManageBranches(authData) {
+  if (Math.random() < 0.2) { // 20% chance
+    // Get branches list
+    const response = httpClient.get(
+      '/admin/branches?page=0&size=20',
+      authData,
+      'admin',
+      { tags: { name: 'GetBranches', flow: 'admin', criticality: 'medium' } }
+    );
+    
+    check(response, {
+      'branches retrieved': (r) => r.status === 200,
+      'branches response time OK': (r) => r.timings.duration < 1200
+    });
+    
+    recordMetrics(response, 'admin', 1200);
+    
+    // Maybe add new branch
+    if (Math.random() < 0.2) {
+      const branchData = generateBranchRequest();
+      const addResponse = httpClient.post(
+        '/admin/branches',
+        branchData,
+        authData,
+        'admin',
+        { tags: { name: 'AddBranch', flow: 'admin', criticality: 'medium' } }
+      );
+      
+      check(addResponse, {
+        'branch added': (r) => r.status === 201,
+        'add branch time OK': (r) => r.timings.duration < 2000
+      });
+      
+      recordMetrics(addResponse, 'admin', 2000);
+    }
+    
+    sleep(randomInt(1, 2));
+  }
+}
+
+/**
+ * Get revenue reports
+ */
+function getRevenueReports(authData) {
+  const response = httpClient.get(
+    '/admin/reports/room-booking-revenue?range=MONTH',
+    authData,
+    'admin',
+    { tags: { name: 'GetRevenueReports', flow: 'admin', criticality: 'high' } }
+  );
+  
+  check(response, {
+    'revenue reports retrieved': (r) => r.status === 200,
+    'revenue reports response time OK': (r) => r.timings.duration < 3000
+  });
+  
+  recordMetrics(response, 'admin', 3000);
+  sleep(randomInt(1, 2));
+}
+
+/**
+ * Maybe manage spot bookings
+ */
+function maybeManageSpotBookings(authData) {
+  if (Math.random() < 0.3) { // 30% chance
+    // Get spot bookings list
+    const response = httpClient.get(
+      '/spot-bookings?page=0&size=20',
+      authData,
+      'admin',
+      { tags: { name: 'GetSpotBookings', flow: 'admin', criticality: 'medium' } }
+    );
+    
+    check(response, {
+      'spot bookings retrieved': (r) => r.status === 200,
+      'spot bookings response time OK': (r) => r.timings.duration < 1500
+    });
+    
+    recordMetrics(response, 'admin', 1500);
+    
+    // Maybe create spot booking
+    if (Math.random() < 0.2) {
+      const spotBookingData = {
+        guestName: `Guest${randomInt(100, 999)}`,
+        guestEmail: `guest${randomInt(100, 999)}@test.com`,
+        guestPhone: `+91${randomInt(1000000000, 9999999999)}`,
+        checkInDate: '2024-04-01',
+        checkOutDate: '2024-04-03',
+        roomType: 'DELUXE',
+        numberOfGuests: 2
+      };
+      
+      const createResponse = httpClient.post(
+        '/spot-bookings',
+        spotBookingData,
+        authData,
+        'admin',
+        { tags: { name: 'CreateSpotBooking', flow: 'admin', criticality: 'medium' } }
+      );
+      
+      check(createResponse, {
+        'spot booking created': (r) => r.status === 201,
+        'create spot booking time OK': (r) => r.timings.duration < 2000
+      });
+      
+      recordMetrics(createResponse, 'admin', 2000);
+    }
+    
+    sleep(randomInt(1, 2));
+  }
 }

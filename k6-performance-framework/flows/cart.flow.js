@@ -18,12 +18,33 @@ const vuCartState = {
  */
 export function cartFlow(authData) {
   group('Cart Flow', () => {
+    getCart(authData);
     addItemToCart(authData);
     getCartItems(authData);
     maybeUpdateCartItem(authData);
     maybeClearCart(authData);
     maybeCheckout(authData);
   });
+}
+
+/**
+ * Get cart details
+ */
+function getCart(authData) {
+  const response = httpClient.get(
+    '/cart',
+    authData,
+    'user',
+    { tags: { name: 'GetCart', flow: 'cart', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'cart retrieved': (r) => r.status === 200,
+    'get cart response time OK': (r) => r.timings.duration < 800
+  });
+  
+  recordMetrics(response, 'cart', 800);
+  sleep(randomInt(1, 2));
 }
 
 /**

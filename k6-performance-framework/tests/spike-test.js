@@ -7,6 +7,7 @@ import { setupAuth } from '../core/auth.js';
 import { publicFlow } from '../flows/public.flow.js';
 import { userFlow } from '../flows/user.flow.js';
 import { adminFlow } from '../flows/admin.flow.js';
+import { paymentFlow } from '../flows/payment.flow.js';
 import { httpClient } from '../core/httpClient.js';
 import { check, sleep, group } from 'k6';
 
@@ -38,14 +39,17 @@ export default function (authData) {
   const flowChoice = Math.random();
   
   try {
-    if (flowChoice < 0.4) {
-      // 40% - Public browsing (most common)
+    if (flowChoice < 0.3) {
+      // 30% - Public browsing (most common)
       publicFlow(authData);
-    } else if (flowChoice < 0.7) {
-      // 30% - User operations
+    } else if (flowChoice < 0.55) {
+      // 25% - User operations
       userFlow(authData);
+    } else if (flowChoice < 0.75) {
+      // 20% - Payment operations (critical for revenue)
+      paymentFlow(authData);
     } else if (flowChoice < 0.9) {
-      // 20% - Admin operations
+      // 15% - Admin operations
       adminFlow(authData);
     } else {
       // 10% - Critical business APIs
