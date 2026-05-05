@@ -13,46 +13,34 @@ Complete, production-ready load and performance testing solution for hotel booki
 ### Installation
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd hotel-booking-performance-tests
+# Navigate to the performance framework
+cd k6-performance-framework
 
-# Install dependencies
-npm run setup
+# Install dependencies (if package.json exists)
+npm install
 
 # Configure your API endpoints
-# Edit lib/enhanced-config.js and replace:
-# - <REPLACE_WITH_BASE_URL> with your actual API base URL
-# - <REPLACE_WITH_USER_TOKEN> with valid user JWT token
-# - <REPLACE_WITH_ADMIN_TOKEN> with valid admin JWT token
+# Edit config/env.js and replace with your actual credentials
 ```
 
 ### Running Tests
 
 ```bash
-# Complete test suite with reports (recommended)
-npm run test:full
+# Run 5-VU load test (quick health check)
+k6 run 5-vu-load-test.js
 
-# Quick test without smoke test
-npm run test:quick
+# Run 3000-VU load test (comprehensive load testing)
+k6 run 3000-vu-load-test.js
 
-# Only smoke test
-npm run test:smoke-only
+# Generate reports with output
+k6 run 5-vu-load-test.js --out html=report.html
 
-# Generate reports from existing data
-npm run report:generate
-
-# FOCUSED TESTING STRATEGY
-# Run individual focused tests
-npm run test:booking-focused
-npm run test:cart-focused
-npm run test:admin-focused
-
-# Run all focused tests sequentially
-npm run test:all-focused
-
-# Run focused tests with comparative reporting
-npm run test:focused-reports
+# Run specific flow tests
+k6 run tests/user-only-test.js
+k6 run tests/admin-only-test.js
+k6 run tests/booking-only-test.js
+k6 run tests/cart-only-test.js
+k6 run tests/public-only-test.js
 ```
 
 ## 📊 Test Scenarios
@@ -83,146 +71,227 @@ npm run test:focused-reports
 - Payment webhooks
 - Max occupancy queries
 
-## 🎯 Focused Testing Strategy
-
-### Why Focused Tests?
-
-Testing all endpoints together can:
-- Create noisy results that hide individual bottlenecks
-- Make it difficult to isolate specific performance issues
-- Mix different traffic patterns that skew metrics
-
-### Focused Test Isolation
-
-**1. Booking-Focused Test**
-- Isolates booking flow performance
-- Targets: booking creation, retrieval, modification, cancellation
-- Load pattern: 20→80→120 VUs (10 min)
-- Key metrics: booking success rate, processing time
-
-**2. Cart-Focused Test**
-- Isolates cart operations performance
-- Targets: add, update, remove items, checkout
-- Load pattern: 30→120→80 VUs (8 min)
-- Key metrics: cart operation success, response time
-
-**3. Admin-Focused Test**
-- Isolates admin/staff operations
-- Targets: dashboard, booking management, refunds, check-in/out
-- Load pattern: 10→40→25 VUs (11 min)
-- Key metrics: admin response time, processing success
-
-### Comparative Analysis
-
-The focused test runner generates:
-- **Individual test reports** for each flow
-- **Comparative analysis** showing performance across flows
-- **Bottleneck identification** by comparing metrics
-- **Resource utilization insights** per functional area
-
-### When to Use Focused Tests
-
-- **Initial performance baseline** for each flow
-- **Regression testing** after specific feature changes
-- **Bottleneck investigation** when issues are suspected
-- **Capacity planning** for specific functional areas
-- **Pre-deployment validation** of critical flows
-
 ## 🎯 Load Test Configuration
 
+### 5-VU Load Test (Health Check)
 ```
 Stages:
-- 0 → 50 VUs (2 min ramp-up)
-- 50 → 150 VUs (5 min load)
-- 150 → 300 VUs (2 min spike)
-- 300 → 50 VUs (1 min cooldown)
-
-Traffic Distribution:
-- 70% Public traffic
-- 25% Authenticated user traffic
-- 5% Admin traffic
+- 0 → 5 VUs (1 min ramp-up)
+- 5 VU (3 min sustained)
+- 5 → 0 VUs (1 min cooldown)
 
 Thresholds:
-- P95 Response Time < 800ms
-- P99 Response Time < 1000ms
-- Error Rate < 1%
+- P95 Response Time < 1500ms
+- P99 Response Time < 2000ms
+- Error Rate < 10%
+```
+
+### 3000-VU Load Test (Comprehensive)
+```
+Stages:
+- 0 → 500 VUs (2 min ramp-up)
+- 500 → 2000 VUs (5 min load)
+- 2000 → 3000 VUs (3 min peak)
+- 3000 → 0 VUs (2 min cooldown)
+
+Thresholds:
+- P95 Response Time < 3000ms
+- P99 Response Time < 5000ms
+- Error Rate < 20%
 ```
 
 ## 📁 Project Structure
 
 ```
-hotel-booking-performance-tests/
-├── lib/
-│   ├── enhanced-config.js      # Test configuration and data
-│   ├── test-helpers.js         # Helper functions and utilities
-│   ├── config.js              # Legacy configuration
-│   └── helpers.js             # Legacy helpers
+k6-performance-framework/
+├── config/
+│   ├── env.js                    # Environment configuration
+│   ├── scenarios.js              # Test scenarios
+│   └── thresholds.js             # Performance thresholds
+├── core/
+│   ├── auth.js                   # Authentication handling
+│   ├── httpClient.js             # HTTP client with retry logic
+│   ├── metrics.js                # Custom metrics collection
+│   └── flowRouter.js             # Test flow routing
+├── data/
+│   ├── generators.js             # Test data generators
+│   └── testData.js               # Static test data
+├── flows/
+│   ├── user.flow.js              # User flow implementation
+│   ├── admin.flow.js             # Admin flow implementation
+│   ├── booking.flow.js           # Booking flow implementation
+│   ├── cart.flow.js              # Cart flow implementation
+│   ├── payment.flow.js           # Payment flow implementation
+│   └── public.flow.js            # Public flow implementation
 ├── tests/
-│   ├── complete-load-test.js   # Main comprehensive test
-│   ├── booking-focused-test.js # Booking flow isolation
-│   ├── cart-focused-test.js    # Cart flow isolation
-│   ├── admin-focused-test.js   # Admin flow isolation
-│   ├── smoke-test.js          # Quick health check
-│   ├── load-test.js           # Standard load test
-│   ├── stress-test.js         # Maximum load testing
-│   ├── spike-test.js          # Traffic spike testing
-│   └── soak-test.js           # Endurance testing
-├── scripts/
-│   ├── report-generator.js     # Main report generator
-│   └── focused-test-runner.js # Focused test runner
-├── reports/                    # Generated reports (auto-created)
-├── logs/                       # Test logs (auto-created)
-├── run-performance-test.sh     # Main automation script
-├── package.json               # NPM configuration
-└── README.md                  # This file
+│   ├── user-only-test.js         # User-only performance test
+│   ├── admin-only-test.js        # Admin-only performance test
+│   ├── booking-only-test.js      # Booking-only performance test
+│   ├── cart-only-test.js         # Cart-only performance test
+│   ├── public-only-test.js       # Public-only performance test
+│   └── spike-test.js             # Spike testing scenario
+├── utils/
+│   ├── helpers.js                # Utility functions
+│   └── logger.js                 # Logging utilities
+├── observability/
+│   ├── README.md                 # Observability setup guide
+│   ├── grafana/                  # Grafana dashboards
+│   └── run.sh                    # Observability startup script
+├── 5-vu-load-test.js             # 5-VU comprehensive test
+├── 3000-vu-load-test.js          # 3000-VU comprehensive test
+├── get-tokens.sh                 # Authentication token fetcher
+└── README.md                     # This file
 ```
 
 ## 🔧 Configuration
 
 ### API Configuration
 
-Edit `lib/enhanced-config.js`:
+Edit `config/env.js`:
 
 ```javascript
-export const config = {
-  BASE_URL: 'https://your-api-domain.com/api/v1',
-  AUTH: {
-    USER_TOKEN: 'your-jwt-user-token',
-    ADMIN_TOKEN: 'your-jwt-admin-token',
+// Environment variables
+export const ENV = __ENV.ENV || 'staging';
+
+// API URLs
+const BASE_URLS = {
+  staging: {
+    public: 'https://staging.api.hotelashleshmanipal.com',
+    admin: 'https://staging.api.hotelashleshmanipal.com'
   },
-  // ... other configuration
-};
-```
-
-### Customizing Test Data
-
-```javascript
-TEST_DATA: {
-  orgIds: ['1', '2', '3'],           // Organization IDs
-  branchIds: ['1', '2', '3', '4'],    // Branch IDs
-  hotelIds: ['1', '2', '3', '4', '5'], // Hotel IDs
-  // ... add more IDs as needed
-}
-```
-
-### Traffic Distribution
-
-```javascript
-LOAD_CONFIG: {
-  trafficDistribution: {
-    public: 0.70,    // 70% public traffic
-    user: 0.25,      // 25% user traffic
-    admin: 0.05      // 5% admin traffic
+  prod: {
+    public: 'https://api.hotelashleshmanipal.com',
+    admin: 'https://api.hotelashleshmanipal.com'
   }
+};
+
+// Authentication credentials
+function getCredentials() {
+  return {
+    USER: { 
+      email: __ENV.USER_EMAIL || 'your-email@example.com', 
+      password: __ENV.USER_PASSWORD || 'your-password' 
+    },
+    ADMIN: { 
+      email: __ENV.ADMIN_EMAIL || 'your-admin@example.com', 
+      password: __ENV.ADMIN_PASSWORD || 'your-admin-password' 
+    }
+  };
 }
 ```
 
-## 📈 Reporting
+### Environment Variables
+
+```bash
+# Set environment variables for testing
+export ENV=staging
+export USER_EMAIL="your-email@example.com"
+export USER_PASSWORD="your-password"
+export ADMIN_EMAIL="your-admin@example.com"
+export ADMIN_PASSWORD="your-admin-password"
+```
+
+## 📈 API Coverage
+
+### Comprehensive Endpoint Testing (88 APIs)
+
+#### User Endpoints (4 APIs)
+- `/api/v1/users/me` - User profile
+- `/api/v1/users/me/credit-notes` - Credit notes
+- `/api/v1/users/me/permissions` - User permissions
+- `/api/v1/users/me/image` - User image
+
+#### Admin Endpoints (3 APIs)
+- `/api/v1/admin/dashboard` - Admin dashboard
+- `/api/v1/admin/audit-logs` - Audit logs
+- `/api/v1/admin/reports/room-booking-revenue` - Revenue reports
+
+#### Booking Endpoints (11 APIs)
+- `/api/v1/bookings/me` - User bookings
+- `/api/v1/bookings/` - Create/list bookings
+- `/api/v1/bookings/{id}/cancel` - Cancel booking
+- `/api/v1/bookings/{id}/check-in` - Check-in
+- `/api/v1/bookings/{id}/check-out` - Check-out
+- `/api/v1/bookings/{id}/activity` - Booking activity
+- `/api/v1/bookings/{id}/invoice` - Booking invoice
+- `/api/v1/bookings/{id}/modify` - Modify booking
+- `/api/v1/bookings/refund` - Process refund
+- `/api/v1/bookings/payment/webhook` - Payment webhook
+- `/api/v1/bookings/{id}/refund-estimate` - Refund estimate
+
+#### Cart Endpoints (5 APIs)
+- `/api/v1/cart` - Cart details
+- `/api/v1/cart/checkout` - Cart checkout
+- `/api/v1/cart/items` - Cart items
+- `/api/v1/cart/items` - Add cart item
+- `/api/v1/cart/items/{id}` - Update cart item
+
+#### Additional Categories (65 APIs)
+- Staff Management (6 APIs)
+- Amenities & Add-ons (6 APIs)
+- Branches (4 APIs)
+- Hotels (5 APIs)
+- Organization Settings (10 APIs)
+- Reviews (9 APIs)
+- Roles & Permissions (3 APIs)
+- Spot Bookings (8 APIs)
+- Vouchers (3 APIs)
+- Discount Rules (3 APIs)
+- Contact Details (1 API)
+- Refund Policies (2 APIs)
+- Sub-categories (3 APIs)
+
+## 🎯 Performance Metrics
+
+### Key Performance Indicators
+
+| Metric | 5-VU Target | 3000-VU Target | Measurement |
+|--------|-------------|----------------|-------------|
+| P95 Response Time | < 1500ms | < 3000ms | 95th percentile |
+| P99 Response Time | < 2000ms | < 5000ms | 99th percentile |
+| Error Rate | < 10% | < 20% | Failed requests / Total requests |
+| Success Rate | > 90% | > 80% | Successful requests / Total requests |
+
+### Custom Metrics
+
+- `api_response_time` - Response time trends
+- `api_success_rate` - Success rate tracking
+- `api_error_rate` - Error rate tracking
+- `booking_creation_rate` - Booking success metrics
+- `booking_cancellation_rate` - Cancellation metrics
+- `refund_processing_rate` - Refund processing metrics
+
+## 🔧 Authentication
+
+### JWT Token Management
+
+The framework uses JWT Bearer tokens for authentication:
+
+```javascript
+// Authentication flow
+1. Login via /api/v1/auth/login
+2. Receive JWT token
+3. Include token in Authorization header
+4. Token validation and refresh
+```
+
+### Getting Tokens
+
+```bash
+# Use the provided script to fetch tokens
+./get-tokens.sh
+
+# Or manually set environment variables
+export USER_TOKEN="your-jwt-user-token"
+export ADMIN_TOKEN="your-jwt-admin-token"
+```
+
+## 📊 Reporting
 
 ### Generated Reports
 
-1. **HTML Report** - Interactive dashboard with charts
-2. **PDF Report** - Shareable document format
+1. **Console Output** - Real-time metrics during test execution
+2. **HTML Reports** - Interactive dashboard with charts
 3. **JSON Data** - Machine-readable results for CI/CD
 
 ### Report Features
@@ -231,103 +300,64 @@ LOAD_CONFIG: {
 - 📈 Request rate over time
 - ✅ Pass/fail status for thresholds
 - 🎯 Performance metrics by endpoint
-- 📋 Executive summary
+- 📋 Error analysis and breakdown
 
 ### Custom Reports
 
 ```bash
-# Generate HTML report only
-k6 run --out html=reports/custom-report.html tests/complete-load-test.js
+# Generate HTML report
+k6 run 5-vu-load-test.js --out html=report.html
 
 # Generate JSON for custom processing
-k6 run --out json=reports/data.json tests/complete-load-test.js
+k6 run 3000-vu-load-test.js --out json=results.json
+
+# Generate both formats
+k6 run 5-vu-load-test.js --out html=report.html --out json=results.json
 ```
 
-## � Automation Scripts
-
-### Main Script Options
-
-```bash
-./run-performance-test.sh [OPTIONS]
-
-Options:
-  -h, --help          Show help message
-  -s, --smoke-only    Run only smoke test
-  -t, --test-only     Run main test only
-  -r, --reports-only  Generate reports only
-  -q, --quick         Quick mode (skip smoke)
-  -v, --verbose       Verbose output
-```
-
-### NPM Scripts
-
-```bash
-npm run test:smoke        # Smoke test only
-npm run test:load         # Standard load test
-npm run test:complete     # Complete test suite
-npm run test:full         # Full automation with reports
-npm run test:quick        # Quick mode
-npm run clean             # Clean reports and logs
-npm run setup             # Install dependencies
-```
-
-## 🎯 Performance Metrics
-
-### Key Performance Indicators
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| P95 Response Time | < 800ms | 95th percentile |
-| P99 Response Time | < 1000ms | 99th percentile |
-| Error Rate | < 1% | Failed requests / Total requests |
-| Throughput | Variable | Requests per second |
-| Availability | > 99% | Successful requests / Total requests |
-
-### Custom Metrics
-
-- `errors` - Error rate tracking
-- `response_time` - Response time trends
-- `request_count` - Total request counter
-
-## � Troubleshooting
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **Authentication Failures**
+1. **Authentication Failures (401)**
    ```bash
-   # Verify tokens are valid
-   curl -H "Authorization: Bearer <TOKEN>" <BASE_URL>/users/me
+   # Check credentials in config/env.js
+   # Verify auth endpoint is accessible
+   curl -X POST https://staging.api.hotelashleshmanipal.com/api/v1/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"your-email","password":"your-password"}'
    ```
 
 2. **High Error Rates**
    ```bash
    # Check API server status
-   curl <BASE_URL>/health
+   curl https://staging.api.hotelashleshmanipal.com/health
    
-   # Review k6 logs
-   k6 run --http-debug tests/smoke-test.js
+   # Run with debug output
+   k6 run --http-debug 5-vu-load-test.js
    ```
 
-3. **Report Generation Issues**
+3. **Missing Dependencies**
    ```bash
-   # Install puppeteer manually
-   npm install puppeteer
-   
-   # Check Chrome installation
-   google-chrome --version
+   # Install k6
+   brew install k6  # macOS
+   # or visit https://k6.io/docs/getting-started/installation/
    ```
 
 ### Debug Mode
 
 ```bash
 # Run with verbose output
-./run-performance-test.sh --verbose
+k6 run --vus 1 --iterations 1 5-vu-load-test.js
 
-# Run k6 with debug
-k6 run --http-debug tests/complete-load-test.js
+# Run with HTTP debugging
+k6 run --http-debug 5-vu-load-test.js
+
+# Run specific test flow
+k6 run tests/booking-only-test.js
 ```
 
-## � CI/CD Integration
+## 🔄 CI/CD Integration
 
 ### GitHub Actions Example
 
@@ -340,30 +370,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - name: Install k6
+      - name: Setup k6
         run: |
           sudo gpg -k
           sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
           echo 'deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main' | sudo tee /etc/apt/sources.list.d/k6.list
           sudo apt-get update
           sudo apt-get install k6
-      - name: Install dependencies
-        run: npm install
-      - name: Run performance tests
-        run: npm run test:quick
+      - name: Run Performance Tests
+        run: |
+          cd k6-performance-framework
+          k6 run 5-vu-load-test.js
         env:
-          BASE_URL: ${{ secrets.API_BASE_URL }}
-          USER_TOKEN: ${{ secrets.USER_TOKEN }}
-          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-      - name: Upload reports
-        uses: actions/upload-artifact@v3
-        with:
-          name: performance-reports
-          path: reports/
+          USER_EMAIL: ${{ secrets.USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
 ```
 
 ### Jenkins Pipeline
@@ -374,8 +396,7 @@ pipeline {
     stages {
         stage('Performance Test') {
             steps {
-                sh 'npm install'
-                sh 'npm run test:quick'
+                sh 'cd k6-performance-framework && k6 run 5-vu-load-test.js'
             }
             post {
                 always {
@@ -383,8 +404,8 @@ pipeline {
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
-                        reportDir: 'reports',
-                        reportFiles: '*.html',
+                        reportDir: '.',
+                        reportFiles: 'report.html',
                         reportName: 'Performance Report'
                     ])
                 }
@@ -394,52 +415,12 @@ pipeline {
 }
 ```
 
-## � API Reference
+## 📈 Observability
 
-### Covered Endpoints
+### Grafana Integration
 
-| Category | Endpoints | Auth Required |
-|----------|-----------|---------------|
-| Public | 11 endpoints | No |
-| User | 3 endpoints | User Token |
-| Cart | 4 endpoints | User Token |
-| Booking | 6 endpoints | User Token |
-| Admin | 7 endpoints | Admin Token |
-| Edge | 3 endpoints | Mixed |
+```bash
+# Start observability stack
+cd observability
+./run.sh
 
-### Request Examples
-
-```javascript
-// Public API call
-httpHelper.get('/branches/1')
-
-// Authenticated user call
-httpHelper.get('/users/me', 'user')
-
-// Admin API call
-httpHelper.post('/bookings/1/refund', refundData, 'admin')
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add your improvements
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the package.json file for details.
-
-## 📞 Support
-
-For questions and support:
-- Create an issue in the repository
-- Check the troubleshooting section
-- Review the k6 documentation: https://k6.io/docs/
-
----
-
-**Generated by Hotel Booking Backend Performance Test Suite**  
-*Last updated: $(date)*
