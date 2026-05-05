@@ -5,7 +5,17 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 import { config, TIMEOUTS, RETRY_CONFIG, API_VALIDATION, API_CONFIG } from '../config/env.js';
-import { debug, warn, error, logRequest, logError } from '../utils/logger.js';
+
+// Simple logging functions to replace logger
+const debug = (msg, data) => console.log(`DEBUG: ${msg}`, data || '');
+const warn = (msg, data) => console.warn(`WARN: ${msg}`, data || '');
+const error = (msg, data) => console.error(`ERROR: ${msg}`, data || '');
+const logRequest = (response, endpoint) => {
+  console.log(`Request to ${endpoint} - ${response.status} (${response.timings.duration}ms)`);
+};
+const logError = (response, endpoint) => {
+  console.error(`Request to ${endpoint} - ERROR: ${response.status}`);
+};
 
 // Custom metrics for HTTP client
 const httpErrorRate = new Rate('http_client_errors');

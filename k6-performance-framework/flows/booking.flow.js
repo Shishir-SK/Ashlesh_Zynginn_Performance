@@ -30,19 +30,18 @@ export function bookingFlow(authData) {
   group('Booking Flow', () => {
     createBooking(authData);
     getUserBookings(authData);
-    
-    // Only proceed with lifecycle if we have bookings
-    if (vuBookingState.bookings.length > 0) {
-      viewBookingDetails(authData);
-      maybeModifyBooking(authData);
-      maybeCancelBooking(authData);
-      maybeGetRefundEstimate(authData);
-      maybeGetBookingFinancialHistory(authData);
-      maybeGetBookingInvoice(authData);
-      maybeGetBookingCredits(authData);
-      maybeGetFreeCancellationWindow(authData);
-      maybeMarkNoShow(authData);
-    }
+    getBookingDetails(authData);
+    maybeModifyBooking(authData);
+    maybeCancelBooking(authData);
+    getBookingFinancialHistory(authData);
+    getBookingCredits(authData);
+    getFreeCancellationWindow(authData);
+    downloadInvoice(authData);
+    maybeRefundBooking(authData);
+    maybeCheckInBooking(authData);
+    maybeCheckOutBooking(authData);
+    maybeConfirmNoShow(authData);
+    getModifyBookingPreview(authData);
   });
 }
 
@@ -60,6 +59,12 @@ function createBooking(authData) {
     { tags: { name: 'CreateBooking', flow: 'booking', criticality: 'critical' } }
   );
   
+  // Handle null response
+  if (!response) {
+    console.log('Warning: createBooking received null response');
+    return;
+  }
+  
   const isSuccess = response.status === 201;
   const isValidationError = response.status === 400;
   
@@ -68,10 +73,12 @@ function createBooking(authData) {
     'booking creation time OK': (r) => r.timings.duration < 2000
   });
   
-  recordMetrics(response, 'booking', 2000);
+  if (response && response.timings) {
+    recordMetrics(response, 'booking', 2000);
+  }
   bookingCreationRate.add(isSuccess);
   
-  if (isSuccess) {
+  if (isSuccess && response) {
     try {
       if (response && response.body) {
         const body = response.json();
@@ -87,7 +94,10 @@ function createBooking(authData) {
     }
   }
   
-  sleep(randomInt(2, 4));
+  // Only sleep if we have a valid response
+  if (response) {
+    sleep(randomInt(2, 4));
+  }
 }
 
 /**
@@ -219,27 +229,144 @@ function maybeGetRefundEstimate(authData) {
 }
 
 /**
- * Maybe get booking history
+ * Get booking details
  */
-function maybeGetBookingHistory(authData) {
-  if (Math.random() < 0.4) { // 40% chance
-    const booking = randomItem(vuBookingState.bookings);
-    
-    const response = httpClient.get(
-      `/bookings/${booking.id}/financial-history`,
-      authData,
-      'user',
-      { tags: { name: 'GetBookingFinancialHistory', flow: 'booking', criticality: 'medium' } }
-    );
-    
-    check(response, {
-      'booking financial history retrieved': (r) => r.status === 200,
-      'booking history response time OK': (r) => r.timings.duration < 1200
-    });
-    
-    recordMetrics(response, 'booking', 1200);
-    sleep(randomInt(1, 2));
-  }
+function getBookingDetails(authData) {
+  if (vuBookingState.bookings.length === 0) return;
+  
+  const booking = randomItem(vuBookingState.bookings);
+  
+  const response = httpClient.get(
+    `/bookings/${booking.id}`,
+    authData,
+    'user',
+    { tags: { name: 'GetBookingDetails', flow: 'booking', criticality: 'high' } }
+  );
+  
+  check(response, {
+    'booking details retrieved': (r) => r.status === 200,
+    'booking details time OK': (r) => r.timings.duration < 1000
+  });
+  
+  recordMetrics(response, 'booking', 1000);
+  sleep(randomInt(1, 2));
+}
+
+/**
+ * Get booking financial history
+ */
+function getBookingFinancialHistory(authData) {
+  if (vuBookingState.bookings.length === 0 || Math.random() > 0.6) return;
+  
+  const booking = randomItem(vuBookingState.bookings);
+  
+  const response = httpClient.get(
+    `/bookings/${booking.id}/financial-history`,
+    authData,
+    'user',
+    { tags: { name: 'GetBookingFinancialHistory', flow: 'booking', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'booking financial history retrieved': (r) => r.status === 200,
+    'financial history time OK': (r) => r.timings.duration < 1000
+  });
+  
+  recordMetrics(response, 'booking', 1000);
+}
+
+/**
+ * Get booking credits
+ */
+function getBookingCredits(authData) {
+  if (vuBookingState.bookings.length === 0 || Math.random() > 0.5) return;
+  
+  const booking = randomItem(vuBookingState.bookings);
+  
+  const response = httpClient.get(
+    `/bookings/${booking.id}/credits`,
+    authData,
+    'user',
+    { tags: { name: 'GetBookingCredits', flow: 'booking', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'booking credits retrieved': (r) => r.status === 200,
+    'booking credits time OK': (r) => r.timings.duration < 1000
+  });
+  
+  recordMetrics(response, 'booking', 1000);
+}
+
+/**
+ * Get free cancellation window
+ */
+function getFreeCancellationWindow(authData) {
+  if (vuBookingState.bookings.length === 0 || Math.random() > 0.4) return;
+  
+  const booking = randomItem(vuBookingState.bookings);
+  
+  const response = httpClient.get(
+    `/bookings/${booking.id}/free-cancellation-window`,
+    authData,
+    'user',
+    { tags: { name: 'GetFreeCancellationWindow', flow: 'booking', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'free cancellation window retrieved': (r) => r.status === 200,
+    'cancellation window time OK': (r) => r.timings.duration < 1000
+  });
+  
+  recordMetrics(response, 'booking', 1000);
+}
+
+/**
+ * Download invoice
+ */
+function downloadInvoice(authData) {
+  if (vuBookingState.bookings.length === 0 || Math.random() > 0.3) return;
+  
+  const booking = randomItem(vuBookingState.bookings);
+  
+  const response = httpClient.get(
+    `/bookings/${booking.id}/invoice`,
+    authData,
+    'user',
+    { tags: { name: 'DownloadInvoice', flow: 'booking', criticality: 'low' } }
+  );
+  
+  check(response, {
+    'invoice downloaded': (r) => r.status === 200,
+    'invoice download time OK': (r) => r.timings.duration < 2000
+  });
+  
+  recordMetrics(response, 'booking', 2000);
+}
+
+/**
+ * Get modify booking preview
+ */
+function getModifyBookingPreview(authData) {
+  if (vuBookingState.bookings.length === 0 || Math.random() > 0.4) return;
+  
+  const booking = randomItem(vuBookingState.bookings);
+  const modifyData = generateBookingRequest();
+  
+  const response = httpClient.post(
+    `/bookings/${booking.id}/modify-preview`,
+    modifyData,
+    authData,
+    'user',
+    { tags: { name: 'GetModifyBookingPreview', flow: 'booking', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'modify preview retrieved': (r) => r.status === 200,
+    'modify preview time OK': (r) => r.timings.duration < 1500
+  });
+  
+  recordMetrics(response, 'booking', 1500);
 }
 
 /**

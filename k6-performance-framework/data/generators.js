@@ -37,15 +37,31 @@ export function generateBookingRequest() {
   const checkOut = new Date(checkIn);
   checkOut.setDate(checkOut.getDate() + randomInt(1, 7));
   
+  // Generate proper UUIDs for hotelId and branchId
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+  
   return {
-    hotelId: randomInt(1, 15),
-    branchId: randomInt(1, 10),
-    checkInDate: checkIn.toISOString().split('T')[0],
-    checkOutDate: checkOut.toISOString().split('T')[0],
+    hotelId: generateUUID(),
+    branchId: generateUUID(),
+    checkIn: checkIn.toISOString().split('T')[0],
+    checkOut: checkOut.toISOString().split('T')[0],
     guests: [generateGuestDetails()],
     guestCount: randomInt(1, 4),
     roomCount: randomInt(1, 3),
-    specialRequests: randomItem(['', 'Late checkout', 'Early checkin', 'Extra pillows'])
+    specialRequests: randomItem(['', 'Late checkout', 'Early checkin', 'Extra pillows']),
+    // Required fields according to API documentation
+    adults: randomInt(1, 4),
+    children: randomInt(0, 2),
+    roomsBooked: randomInt(1, 3),
+    childrenAges: randomInt(0, 2) > 0 ? [randomInt(1, 17)] : [],
+    addOns: [], // Empty array for addOns as it's required
+    applyCredit: Math.random() > 0.5
   };
 }
 

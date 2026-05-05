@@ -130,14 +130,21 @@ function loginWithRetry(type, baseUrl) {
 export function setupAuth() {
   console.log(`Setting up auth for environment: ${config.ENV}`);
   
-  const user = loginWithRetry('user', config.BASE_URL);
-  const admin = loginWithRetry('admin', config.ADMIN_BASE_URL);
+  // Use provided tokens directly instead of login
+  const userToken = config.AUTH.USER.token;
+  const adminToken = config.AUTH.ADMIN.token;
+  
+  if (!userToken || !adminToken) {
+    throw new Error('JWT tokens not found in configuration. Please provide USER_TOKEN and ADMIN_TOKEN environment variables.');
+  }
+  
+  console.log('Using provided JWT tokens for authentication');
   
   return {
-    userToken: user.token,
-    userTokenExpiry: user.expiresAt,
-    adminToken: admin.token,
-    adminTokenExpiry: admin.expiresAt
+    userToken: userToken,
+    userTokenExpiry: Date.now() + 3600000, // 1 hour from now
+    adminToken: adminToken,
+    adminTokenExpiry: Date.now() + 3600000 // 1 hour from now
   };
 }
 

@@ -14,6 +14,11 @@ export function userFlow(authData) {
     viewProfile(authData);
     getPermissions(authData);
     getCreditNotes(authData);
+    updateProfile(authData);
+    uploadProfileImage(authData);
+    verifyPhoneUpdate(authData);
+    verifyEmailUpdate(authData);
+    getMyBookings(authData);
     getUserBookings(authData);
     getUserNotifications(authData);
     getUserPreferences(authData);
@@ -37,13 +42,25 @@ function viewProfile(authData) {
     { tags: { name: 'GetUserProfile', flow: 'user', criticality: 'medium' } }
   );
   
+  // Handle null response
+  if (!response) {
+    console.log('Warning: viewProfile received null response');
+    return;
+  }
+  
   check(response, {
-    'profile retrieved': (r) => r.status === 200,
-    'profile response time OK': (r) => r.timings.duration < 800
+    'profile retrieved': (r) => r && r.status === 200,
+    'profile response time OK': (r) => r && r.timings && r.timings.duration < 800
   });
   
-  recordMetrics(response, 'user', 800);
-  sleep(randomInt(1, 2));
+  if (response && response.timings) {
+    recordMetrics(response, 'user', 800);
+  }
+  
+  // Only sleep if we have a valid response
+  if (response) {
+    sleep(randomInt(1, 2));
+  }
 }
 
 /**

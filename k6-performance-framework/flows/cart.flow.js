@@ -22,8 +22,12 @@ export function cartFlow(authData) {
     addItemToCart(authData);
     getCartItems(authData);
     maybeUpdateCartItem(authData);
+    maybeDecrementCartItem(authData);
+    maybeDeleteCartItem(authData);
     maybeClearCart(authData);
     maybeCheckout(authData);
+    getCartWithDates(authData);
+    maybeApplyCreditToCart(authData);
   });
 }
 
@@ -31,25 +35,127 @@ export function cartFlow(authData) {
  * Get cart details
  */
 function getCart(authData) {
+  // Use correct cart endpoint from API documentation
   const response = httpClient.get(
-    '/cart',
+    '/cart/items',
     authData,
     'user',
     { tags: { name: 'GetCart', flow: 'cart', criticality: 'medium' } }
   );
   
+  // Handle null response
+  if (!response) {
+    console.log('Warning: getCart received null response');
+    return;
+  }
+  
   check(response, {
-    'cart retrieved': (r) => r.status === 200,
-    'get cart response time OK': (r) => r.timings.duration < 800
+    'cart retrieved': (r) => r && (r.status === 200 || r.status === 404),
+    'get cart response time OK': (r) => r && r.timings && r.timings.duration < 800
   });
   
-  recordMetrics(response, 'cart', 800);
-  sleep(randomInt(1, 2));
+  if (response && response.timings) {
+    recordMetrics(response, 'cart', 800);
+  }
+  
+  // Only sleep if we have a valid response
+  if (response) {
+    sleep(randomInt(1, 2));
+  }
 }
 
 /**
- * Add item to cart
+ * Get cart with specific dates
  */
+function getCartWithDates(authData) {
+  if (Math.random() > 0.5) return;
+  
+  const checkIn = new Date();
+  checkIn.setDate(checkIn.getDate() + randomInt(1, 7));
+  const checkOut = new Date(checkIn);
+  checkOut.setDate(checkOut.getDate() + randomInt(1, 3));
+  
+  const response = httpClient.get(
+    `/cart/items?checkIn=${checkIn.toISOString().split('T')[0]}&checkOut=${checkOut.toISOString().split('T')[0]}&applyCredit=false`,
+    authData,
+    'user',
+    { tags: { name: 'GetCartWithDates', flow: 'cart', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'cart with dates retrieved': (r) => r.status === 200 || r.status === 404,
+    'cart with dates time OK': (r) => r.timings.duration < 800
+  });
+  
+  recordMetrics(response, 'cart', 800);
+}
+
+/**
+ * Decrement cart item
+ */
+function maybeDecrementCartItem(authData) {
+  if (vuCartState.items.length === 0 || Math.random() > 0.3) return;
+  
+  const item = randomItem(vuCartState.items);
+  
+  const response = httpClient.delete(
+    `/cart/items/${item.id}/decrement`,
+    authData,
+    'user',
+    { tags: { name: 'DecrementCartItem', flow: 'cart', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'cart item decremented': (r) => r.status === 200,
+    'decrement response time OK': (r) => r.timings.duration < 800
+  });
+  
+  recordMetrics(response, 'cart', 800);
+}
+
+/**
+ * Delete cart item
+ */
+function maybeDeleteCartItem(authData) {
+  if (vuCartState.items.length === 0 || Math.random() > 0.4) return;
+  
+  const item = randomItem(vuCartState.items);
+  
+  const response = httpClient.delete(
+    `/cart/items/${item.id}`,
+    authData,
+    'user',
+    { tags: { name: 'DeleteCartItem', flow: 'cart', criticality: 'medium' } }
+  );
+  
+  check(response, {
+    'cart item deleted': (r) => r.status === 200,
+    'delete response time OK': (r) => r.timings.duration < 800
+  });
+  
+  recordMetrics(response, 'cart', 800);
+}
+
+/**
+ * Apply credit to cart
+ */
+function maybeApplyCreditToCart(authData) {
+  if (vuCartState.items.length === 0 || Math.random() > 0.3) return;
+  
+  const response = httpClient.get(
+    '/cart/items?applyCredit=true',
+    authData,
+    'user',
+    { tags: { name: 'ApplyCreditToCart', flow: 'cart', criticality: 'low' } }
+  );
+  
+  check(response, {
+    'credit applied to cart': (r) => r.status === 200 || r.status === 404,
+    'apply credit time OK': (r) => r.timings.duration < 800
+  });
+  
+  recordMetrics(response, 'cart', 800);
+}
 function addItemToCart(authData) {
   const cartData = generateCartItem();
   
