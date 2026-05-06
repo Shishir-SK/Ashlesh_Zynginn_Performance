@@ -8,7 +8,7 @@ import { cartFlow } from '../flows/cart.flow.js';
 import { adminFlow } from '../flows/admin.flow.js';
 import { hotelFlow } from '../flows/hotel.flow.js';
 import { paymentFlow } from '../flows/payment.flow.js';
-import { sleep, randomInt } from 'k6';
+import { sleep } from 'k6';
 
 // Test configuration
 const TEST_CONFIG = {
@@ -43,7 +43,7 @@ export default function(authData) {
   console.log('Running refined load test with all flows...');
   
   // Execute flows based on weight distribution
-  const rand = randomInt(1, 100);
+  const rand = Math.floor(Math.random() * 100) + 1;
   
   if (rand <= TEST_CONFIG.userFlowWeight) {
     console.log('Executing User Flow...');
@@ -62,7 +62,7 @@ export default function(authData) {
     hotelFlow(authData);
   }
   
-  sleep(randomInt(1, 3));
+  sleep(Math.floor(Math.random() * 2) + 1);
 }
 
 export function teardown() {
