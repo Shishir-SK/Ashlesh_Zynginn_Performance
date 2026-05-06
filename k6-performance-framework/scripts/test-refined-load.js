@@ -7,6 +7,7 @@ import { bookingFlow } from '../flows/booking.flow.js';
 import { cartFlow } from '../flows/cart.flow.js';
 import { adminFlow } from '../flows/admin.flow.js';
 import { hotelFlow } from '../flows/hotel.flow.js';
+import { paymentFlow } from '../flows/payment.flow.js';
 import { sleep, randomInt } from 'k6';
 
 // Test configuration
@@ -15,7 +16,7 @@ const TEST_CONFIG = {
   bookingFlowWeight: 25,   // 25% booking operations
   cartFlowWeight: 20,      // 20% cart operations
   adminFlowWeight: 15,     // 15% admin operations
-  hotelFlowWeight: 10      // 10% hotel operations
+  hotelFlowWeight: 10      // 10% hotel operations (payment flow skipped)
 };
 
 export let options = {
