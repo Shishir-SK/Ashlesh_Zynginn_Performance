@@ -304,3 +304,28 @@ export function generateTestData() {
     })
   };
 }
+
+/**
+ * Generate webhook data for payment processing
+ * @returns {object} webhook payload
+ */
+export function generateWebhookData() {
+  const eventTypes = ['payment.success', 'payment.failed', 'payment.pending', 'refund.processed', 'refund.failed'];
+  
+  return {
+    eventId: `EVT-${randomString(12).toUpperCase()}`,
+    eventType: randomItem(eventTypes),
+    timestamp: new Date().toISOString(),
+    data: {
+      paymentId: `PAY-${randomString(10).toUpperCase()}`,
+      amount: randomInt(100, 5000),
+      currency: 'USD',
+      status: randomItem(['success', 'failed', 'pending']),
+      metadata: {
+        source: 'k6-test',
+        testRun: Date.now()
+      }
+    },
+    signature: `sig_${randomString(32)}`
+  };
+}

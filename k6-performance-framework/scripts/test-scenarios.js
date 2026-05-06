@@ -7,18 +7,16 @@ import { bookingFlow } from '../flows/booking.flow.js';
 import { cartFlow } from '../flows/cart.flow.js';
 import { adminFlow } from '../flows/admin.flow.js';
 import { hotelFlow } from '../flows/hotel.flow.js';
-import { paymentFlow } from '../flows/payment.flow.js';
 import { SMOKE, LOAD, STRESS, SOAK } from '../config/scenarios.js';
 import { sleep, randomInt } from 'k6';
 
 // Test configuration
 const TEST_CONFIG = {
-  userFlowWeight: 25,      // 25% user operations
-  bookingFlowWeight: 20,   // 20% booking operations
-  cartFlowWeight: 15,      // 15% cart operations
+  userFlowWeight: 30,      // 30% user operations
+  bookingFlowWeight: 25,   // 25% booking operations
+  cartFlowWeight: 20,      // 20% cart operations
   adminFlowWeight: 15,     // 15% admin operations
-  hotelFlowWeight: 10,     // 10% hotel operations
-  paymentFlowWeight: 15    // 15% payment operations
+  hotelFlowWeight: 10      // 10% hotel operations
 };
 
 // Get scenario from environment variable
@@ -70,10 +68,8 @@ export default function(authData) {
     cartFlow(authData);
   } else if (rand <= TEST_CONFIG.userFlowWeight + TEST_CONFIG.bookingFlowWeight + TEST_CONFIG.cartFlowWeight + TEST_CONFIG.adminFlowWeight) {
     adminFlow(authData);
-  } else if (rand <= TEST_CONFIG.userFlowWeight + TEST_CONFIG.bookingFlowWeight + TEST_CONFIG.cartFlowWeight + TEST_CONFIG.adminFlowWeight + TEST_CONFIG.hotelFlowWeight) {
-    hotelFlow(authData);
   } else {
-    paymentFlow(authData);
+    hotelFlow(authData);
   }
   
   sleep(randomInt(1, 3));
